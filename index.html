@@ -324,7 +324,7 @@ function build(days,fit){
  step=STEP[$('tf').value]||900;try{TS().applyOptions({timeVisible:$('tf').value!=='1Day'})}catch(e){}
  const o=compute(raw,days);rows=o.rows;clouds=o.clouds;candle.setData(rows);test.setData(o.tl);overlays(o);
  lines=lvl(candle,lines,o.lv,false);stats(o.lv,o.tl,rows);leg(rows[rows.length-1]);
- if(fit)TS().fitContent()}
+ if(fit){try{chart.priceScale('right').applyOptions({autoScale:true})}catch(e){}TS().fitContent()}}
 function stats(lv,tl,r){
  const last=r[r.length-1].close,t=tl[tl.length-1];
  const cs=clouds.slice(0,3).map(c=>{const k=c.sv.length-1,b=c.sv[k]>=c.lv[k];return`<span class="chip"><i>${c.s}/${c.l}</i><span class="${b?'up':'dn'}">${b?'bull':'bear'}</span></span>`}).join('');
@@ -556,7 +556,7 @@ $('wl').onclick=e=>{const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='
 $('add').onclick=()=>{const k=$('sym').value.trim().toUpperCase();if(ALLOWED_WL.has(k)){renderWL();quotes();trends()}};
 
 // ---------- real-time streaming (Alpaca WebSocket trades) ----------
-let ws=null,wsOk=false,wsSubs=new Set(),wsDelay=2000,wsFatal=false,lastRec=0,dirtyMain=false,dirtyM=false,dirtyQ=false,lastM=0,lastQ=0,mbars=null;
+let wsCap=0,ws=null,wsOk=false,wsSubs=new Set(),wsDelay=2000,wsFatal=false,lastRec=0,dirtyMain=false,dirtyM=false,dirtyQ=false,lastM=0,lastQ=0,mbars=null;
 const streaming=()=>wsOk&&Date.now()-lastRec<60000;
 function mergeBars(old,nw){const m=new Map(old.map(b=>[b.t,b])),lt=old.length?old[old.length-1].t:'';
  nw.forEach(b=>{const o=m.get(b.t);m.set(b.t,o&&wsOk&&b.t===lt&&o.s?{...b,h:Math.max(b.h,o.h),l:Math.min(b.l,o.l),c:o.c,s:1}:b)});
@@ -567,10 +567,12 @@ function rebuildKeep(){const days=curDays(),rng=TS().getVisibleLogicalRange(),n0
 function setWs(t,c){$('ws').textContent=t;$('ws').style.color=c||''}
 function wsClose(){wsUnlock();if(ws){ws.onclose=null;try{ws.close()}catch(e){}}ws=null;wsOk=false;wsSubs=new Set();setWs('○ stream off')}
 function wsSync(){if(!wsOk||!ws)return;
- const arr=[...new Set([SYM,...mcharts.map(t=>t.sym),...wl].filter(Boolean))].slice(0,30),nx=new Set(arr);
+ const cap=wsCap||($('feed').value==='sip'?500:30);
+ const arr=[...new Set([SYM,...mcharts.map(t=>t.sym),...wl].filter(Boolean))].slice(0,cap),nx=new Set(arr);
  const add=arr.filter(k=>!wsSubs.has(k)),del=[...wsSubs].filter(k=>!nx.has(k));
- if(add.length)ws.send(JSON.stringify({action:'subscribe',trades:add}));
+ // unsubscribe first so switching stocks never momentarily exceeds the plan's symbol limit
  if(del.length)ws.send(JSON.stringify({action:'unsubscribe',trades:del}));
+ if(add.length)ws.send(JSON.stringify({action:'subscribe',trades:add}));
  wsSubs=nx}
 const TABID=Math.random().toString(36).slice(2);
 function wsLock(){if(lsName!=='localStorage')return true;try{const v=JSON.parse(store.get('wslock')||'null'),n=Date.now();if(v&&v.id!==TABID&&n-v.t<15000)return false;store.set('wslock',JSON.stringify({id:TABID,t:n}));return true}catch(e){return true}}
@@ -587,9 +589,14 @@ function wsConnect(){
   for(const m of a){
    if(m.T==='success'&&m.msg==='connected')w.send(JSON.stringify({action:'auth',key:$('key').value.trim(),secret:$('sec').value.trim()}));
    else if(m.T==='success'&&m.msg==='authenticated'){wsOk=true;wsDelay=2000;wsSubs=new Set();setWs('● streaming','var(--up)');wsSync()}
-   else if(m.T==='error'){wsOk=false;
+   else if(m.T==='error'){
+    if(m.code===405){ // symbol limit: shrink the list, drop everything, resubscribe the priority symbols only
+     wsCap=Math.max(1,Math.min(wsCap||30,Math.max(1,wsSubs.size||30)-5));
+     try{ws.send(JSON.stringify({action:'unsubscribe',trades:[...wsSubs]}))}catch(_){}
+     wsSubs=new Set();setWs('● streaming (top '+wsCap+' symbols — plan symbol limit)','var(--up)');setTimeout(wsSync,500);continue}
+    wsOk=false;
     if([401,402,409].includes(m.code)){wsFatal=true;setWs('stream: '+m.msg,'var(--dn)')}
-    else if(m.code===406){wsDelay=Math.max(wsDelay,5000);setWs('stream busy: another connection uses these keys (retrying)','var(--dn)')}
+    else if(m.code===406){wsDelay=Math.max(wsDelay,5000);setWs('stream: connection limit — another tab/app/device is using these keys (retrying)','var(--dn)')}
     else setWs('stream: '+m.msg,'var(--dn)')}
    else if(m.T==='t')onTrade(m)}};
  w.onclose=()=>{if(ws!==w)return;ws=null;wsOk=false;wsSubs=new Set();if(!wsFatal&&wsDelay<30000)setWs('○ reconnecting…');setTimeout(wsConnect,wsDelay);wsDelay=Math.min(wsDelay*2,30000)}}
@@ -1179,7 +1186,7 @@ $('sym').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 ['key','sec','px','dw','stk'].forEach(i=>$(i).oninput=()=>{saveSettings();setSync(syncOn()?'ready':'local only')});$('da').onchange=()=>store.set('cda',$('da').checked?'1':'0');$('expimg').onclick=exportImage;
 ['c4','c5'].forEach(i=>$(i).onchange=saveSettings);
 $('live').onchange=()=>{saveSettings();if($('live').checked){wsFatal=false;wsConnect()}else wsClose()};
-$('feed').addEventListener('change',()=>{wsClose();wsFatal=false;setTimeout(wsConnect,300)});
+$('feed').addEventListener('change',()=>{wsClose();wsFatal=false;wsCap=0;setTimeout(wsConnect,300)});
 $('px').value=store.get('cpx')||'';$('dw').value=store.get('cdw')||'';$('stk').value=store.get('cstk')||'';$('da').checked=store.get('cda')==='1';$('key').value=store.get('ck')||'';$('sec').value=store.get('cs')||'';$('feed').value=store.get('cf')||'iex';
 $('sym').value=store.get('csym')||'TSLA';$('tf').value=store.get('ct')||'15Min';if(!$('tf').value)$('tf').value='15Min';$('days').value=store.get('cdy')||'5';
 $('c4').checked=store.get('c4')==='1';$('c5').checked=store.get('c5')==='1';$('live').checked=store.get('cl')!=='0';
