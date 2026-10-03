@@ -1,0 +1,14 @@
+name = "cytocine-cloud"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["* * * * *"]   # price-alert check every minute (the Worker skips itself outside 4:00-20:00 ET, Mon-Fri)
+
+[vars]
+ALLOWED_ORIGIN = "https://YOUR-USER.github.io"   # your GitHub Pages origin (no path, no trailing slash)
+FEED = "iex"                                      # or "sip" if you have the paid Alpaca feed
+APP_URL = "https://YOUR-USER.github.io/YOUR-REPO/"
+
+# Secrets (set with: npx wrangler secret put NAME)
+#   APP_TOKEN, ALPACA_KEY, ALPACA_SECRET, SUPABASE_URL, SUPABASE_KEY, DISCORD_WEBHOOK
