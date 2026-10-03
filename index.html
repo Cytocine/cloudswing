@@ -14,6 +14,7 @@
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script>window.LightweightCharts||document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"><\/script>')</script>
 <script src="vendor/html2canvas.min.js"></script>
+<script>window.html2canvas||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>')</script>
 <style>
 :root{--bg:#fff;--ink:#131722;--mut:#6b7280;--line:#e3e6ec;--panel:#f6f7f9;--up:#2e9e4f;--dn:#f23645;--acc:#2962ff}
 *{box-sizing:border-box}
@@ -189,8 +190,8 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <section id="bv" class="hid">
   <div id="bbar">
    <label>Universe <select id="bu"><option value="wl">Watchlist</option><option value="cur">Current symbol</option></select></label>
-   <label>Side <select id="bs"><option value="L">Long (buy, sell at open)</option><option value="S">Short (short, cover at open)</option></select></label>
-   <label>Long-term EMA <select id="blt"><option value="2">34/50</option><option value="3">72/89</option><option value="4">180/200</option></select></label>
+   <label>Side <select id="bs"><option value="L">Long</option><option value="S">Short</option></select></label>
+   <label>Trend Filter <select id="blt"><option value="2">34/50</option><option value="3">72/89</option><option value="4">180/200</option></select></label>
    <label>Entry <select id="be"><option value="flip">Signal flip</option><option value="close">Daily close</option></select></label>
    <label>Exit <select id="bx"><option value="o">Open 9:30</option><option value="c">First 30m close (10:00)</option><option value="b">Best price in first 30m</option></select></label>
    <label>Stop % <input id="bst" type="number" min="0" step="0.5" value="0" style="width:60px"></label>
@@ -198,7 +199,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label>Days <input id="bd" type="number" min="20" max="500" value="120" style="width:64px"></label>
    <button class="p" id="brun">Run</button>
   </div>
-  <div id="bnext" class="hint" style="padding:4px 10px"></div>
+  <div id="bnext" class="hint" style="padding:4px 10px">Backtest uses the same core setup/risk filters as the scanner: trend alignment, valid setup, normal extension, structural stop, score ≥70, execution score ≥50, and trigger confirmation. MTF/RS gates are not reconstructed from 30m-only history.</div>
   <div id="bwrap">
    <div id="bsum" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
    <div class="tw"><table class="t" id="btab"></table></div>
@@ -214,7 +215,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label>Risk % <input id="sr" type="number" step="0.1" value="0.5" style="width:60px"></label>
    <label>ATR× stop <input id="sm" type="number" step="0.1" value="1.5" style="width:58px"></label>
    <label>Target R <input id="stg" type="number" step="0.5" value="3" style="width:58px"></label>
-   <label>Min score <input id="sms" type="number" min="0" max="100" value="0" style="width:52px"></label>
+   <label>Min score <input id="sms" type="number" min="0" max="100" value="70" style="width:52px"></label>
    <label><input type="checkbox" id="sbo">Long only</label><label><input type="checkbox" id="shx">Hide extended</label>
    <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
@@ -892,14 +893,15 @@ function btCalc(raw,o){
   const D=detect(x,d),rs={d1:0,d1w:0,d1ws:0},reg={dir:d};
   if(!D.quality||D.extL!=='NORMAL')continue;
   const pl=plan(x,d,cfg,null);if(!pl.valid)continue;
-  const s=score(x,d,D,rs),e=execScore(pl,x,D,x.c,reg,d);if(s<55||e<50)continue;
+  const s=score(x,d,D,rs),e=execScore(pl,x,D,x.c,reg,d);if(s<70||e<50)continue;
   const confirmed=o.entry==='close'?(D.triggerConfirmed||D.stabilized):D.triggerConfirmed;if(!confirmed)continue;
   const ep=pl.entry,stop=pl.stop,t1=pl.t1,t2=pl.t2;let exit=ep,xi=i,note='';let t1hit=false;
   for(let k=i+1;k<Math.min(n,i+W);k++){
    const q=r[k],hitStop=d>0?q.l<=stop:q.h>=stop,hitT2=d>0?q.h>=t2:q.l<=t2;
    if(hitStop){exit=d>0?Math.min(stop,q.o):Math.max(stop,q.o);xi=k;note='stop';break}
-   if(o.exit==='c'&&k===i+1){exit=q.c;xi=k;note='30m close';break}
-   if(o.exit==='b'&&k===i+1){exit=d>0?q.h:q.l;xi=k;note='best 30m';break}
+   if(o.exit==='o'&&k===i+1){exit=q.o;xi=k;note='next 30m open';break}
+   if(o.exit==='c'&&k===i+1){exit=q.c;xi=k;note='first 30m close';break}
+   if(o.exit==='b'&&k===i+1){exit=d>0?q.h:q.l;xi=k;note='best first 30m';break}
    if(hitT2){exit=t2;xi=k;note='T2';break}
    if(!t1hit&&(d>0?q.h>=t1:q.l<=t1))t1hit=true;
    if(t1hit&&((d>0?q.c<x.e[34]:q.c>x.e[34]))){exit=q.c;xi=k;note='trail';break}
@@ -920,7 +922,7 @@ async function btRun(){
  try{for(let i=0;i<syms.length;i++){const k=syms[i];
    if(!BR[k]||BR[k].days!==days){$('bmsg').textContent=`Loading ${k} (${i+1}/${syms.length})…`;BR[k]={days,raw:await getBars(k,'30Min',startFor(days))}}}
   Object.keys(BR).forEach(k=>{if(!syms.includes(k))delete BR[k]});
-  btCompute();$('bmsg').textContent=`${syms.length} symbols · ${days} trading days of 30m bars · ${new Date().toLocaleTimeString()}`;
+  btCompute();$('bmsg').textContent=`${syms.length} symbols · ${days} trading days · 30m signal engine · score ≥70 · ${new Date().toLocaleTimeString()}`;
  }catch(e){$('bmsg').textContent=e.message;$('bmsg').className='err'}finally{bbusy=false;$('brun').disabled=false}}
 function renderB(){
  const ks=Object.keys(BX);
@@ -994,8 +996,8 @@ function analyze(r,intra){
  const vols=r.map(x=>x.v),av=(i,j)=>vols.slice(i,j).reduce((x,y)=>x+y,0)/Math.max(1,j-i),rvol=vols[n-1]/(av(n-21,n-1)||1),contr=av(n-3,n)<0.8*av(n-13,n-3);
  // Time-of-day normalized RVOL: compare this bar with the same intraday slot on prior sessions.
  let rvolTD=rvol;if(intra){const em=et(Date.parse(r[n-1].t)/1e3).m,sv=[];for(let q=n-1;q>=0&&sv.length<20;q--){if(et(Date.parse(r[q].t)/1e3).m===em)sv.push(r[q].v)}if(sv.length>1)rvolTD=r[n-1].v/(sv.slice(1).reduce((x,y)=>x+y,0)/Math.max(1,sv.length-1)||1)}
- const prev=r[n-2]||r[n-1],range=r[n-1].h-r[n-1].l,body=Math.abs(c-r[n-1].o),closePos=range?(c-r[n-1].l)/range:.5,
-       triggerUp=c>prev.h&&c>e[34][n-1],triggerDn=c<prev.l&&c<e[34][n-1],volExpand=rvolTD>=1.5&&range>=a*.8,
+ const prev=r[n-2]||r[n-1],range=r[n-1].h-r[n-1].l,body=Math.abs(c-r[n-1].o),bodyPct=range?body/range:0,closePos=range?(c-r[n-1].l)/range:.5,
+       triggerUp=c>prev.h&&c>e[34][n-1],triggerDn=c<prev.l&&c<e[34][n-1],triggerQualityUp=triggerUp&&bodyPct>=.5&&closePos>=.65&&rvolTD>=1.2,triggerQualityDn=triggerDn&&bodyPct>=.5&&closePos<=.35&&rvolTD>=1.2,volExpand=rvolTD>=1.5&&range>=a*.8,
        stable=range<=((r.slice(-5,-1).reduce((z,x)=>z+(x.h-x.l),0)/Math.max(1,Math.min(4,n-1))||range)*1.05),
        failedUp=prev.h>e[34][n-1]&&c<e[34][n-1]&&r[n-1].h>prev.h,failedDn=prev.l<e[34][n-1]&&c>e[34][n-1]&&r[n-1].l<prev.l;
  const st=structure(r),pq=pivots(r),lvH=(pq.H.filter(p=>p.i<n-10).pop()||{}).p,lvL=(pq.L.filter(p=>p.i<n-10).pop()||{}).p;
@@ -1004,14 +1006,15 @@ function analyze(r,intra){
  const reclaim=[0,1].some(k=>(cl[n-1-k]>e[34][n-1-k])!==(cl[n-2-k]>e[34][n-2-k]))?(c>e[34][n-1]?1:-1):0;
  const pts=[5,5,25,15,10].reduce((q,w,i)=>q+(bull[i]?w:0),0)+(test?15:0)+(slope>0?10:0)+(st.trend===1?15:st.trend===0?7.5:0)+(c>e[34][n-1]?10:0)+(intra?(c>vw?5:0):2.5);
  return{n,c,a,e:{34:e[34][n-1],50:e[50][n-1],72:e[72][n-1],89:e[89][n-1],200:e[200][n-1]},bull,B:Math.round(pts/115*100),slope,acc,comp,cross,crossDir:bull[2]?1:-1,
-  sep:sep(n-1),dist34:(c-e[34][n-1])/a,dist50:(c-e[50][n-1])/a,test,tlS,tlA,vw,vcross,rvol,rvolTD,contr,st,retU,retD,reclaim,mom:(c-cl[n-11])/a,rsi:rsiF(cl),hi:r[n-1].h,lo:r[n-1].l,range,body,bodyPct:range?body/range:0,closePos,triggerUp,triggerDn,volExpand,stable,failedUp,failedDn}}
+  sep:sep(n-1),dist34:(c-e[34][n-1])/a,dist50:(c-e[50][n-1])/a,test,tlS,tlA,vw,vcross,rvol,rvolTD,contr,st,retU,retD,reclaim,mom:(c-cl[n-11])/a,rsi:rsiF(cl),hi:r[n-1].h,lo:r[n-1].l,range,body,bodyPct:range?body/range:0,closePos,triggerUp,triggerDn,triggerQualityUp,triggerQualityDn,volExpand,stable,failedUp,failedDn}}
 const status=x=>{const s=x.bull[2]?1:-1;return x.cross?'Reversing':x.comp<.6?'Compressing':x.slope*s>0?(x.acc*s>0?'Strengthening':'Weakening'):'Weakening'};
 function detect(X,d){
  const a=X.a,hi=Math.max(X.e[34],X.e[50]),lo=Math.min(X.e[34],X.e[50]),dv=X.vw!=null?(X.c-X.vw)*d/a:0,ext=Math.max(X.dist34*d,X.dist50*d,dv);
- const chase=Math.max(0,ext),extL=chase>4?'SEVERELY EXTENDED':chase>2.5?'EXTENDED':'NORMAL';
+ const chase=Math.max(0,ext),extL=chase>2.5?'SEVERELY EXTENDED':chase>1.75?'EXTENDED':'NORMAL';
  const inZone=d>0?(X.c<=hi+.25*a&&X.c>=lo-.5*a):(X.c>=lo-.25*a&&X.c<=hi+.5*a);
  const pullback=inZone&&!X.triggerUp&&!X.triggerDn,stabilized=pullback&&X.stable;
  const triggerConfirmed=d>0?X.triggerUp:X.triggerDn;
+ const triggerQuality=d>0?X.triggerQualityUp:X.triggerQualityDn;
  let t='No Setup';
  if(extL!=='NORMAL')t='Extended / Chasing';
  else if(d>0?X.retU:X.retD)t=d>0?'Breakout Retest':'Breakdown Retest';
@@ -1021,55 +1024,96 @@ function detect(X,d){
  else if(X.reclaim===d)t='EMA Reclaim';
  else if(X.st.choch===d&&X.test===(d>0))t='Trend Reversal';
  else if(X.comp<.6)t='Compression';else if(X.comp>1.6)t='Expansion';
- const setupOK=t!=='No Setup'&&t!=='Extended / Chasing',quality=setupOK&&(t==='Breakout'||t==='Breakdown'||t==='Breakout Retest'||t==='Breakdown Retest'||t==='VWAP Reclaim'||t==='VWAP Rejection'||t==='EMA Reclaim'||t==='Trend Reversal'?triggerConfirmed:(stabilized||triggerConfirmed));
- return{t,ext,extL,inZone,stabilized,triggerConfirmed,quality,chase}}
+ const setupOK=['Breakout Retest','Breakdown Retest','EMA34 Pullback','EMA50 Pullback','VWAP Reclaim','VWAP Rejection','Breakout','Breakdown'].includes(t);
+ const quality=setupOK&&triggerConfirmed&&triggerQuality;
+ return{t,ext,extL,inZone,stabilized,triggerConfirmed,triggerQuality,quality,chase,pullback};
+}
 function score(X,d,D,rs){
- let s={'Breakout Retest':60,'Breakdown Retest':60,'EMA34 Pullback':58,'EMA50 Pullback':55,'Breakout':50,'Breakdown':50,'VWAP Reclaim':50,'VWAP Rejection':50,'EMA Reclaim':45,'Trend Reversal':40,'Compression':35,'Expansion':35}[D.t]||0;
- if(!s)return 0;
- if(X.st.trend===d)s+=15;if(X.vw!=null&&(X.c-X.vw)*d>0)s+=8;
- if(/Breakout|Breakdown/.test(D.t))s+=X.rvolTD>=1.5?15:-10;else if(X.contr)s+=10;
+ const base={'Breakout Retest':68,'Breakdown Retest':68,'EMA34 Pullback':65,'EMA50 Pullback':60,'Breakout':58,'Breakdown':58,'VWAP Reclaim':56,'VWAP Rejection':56}[D.t]||0;
+ if(!base)return 0;
+ let s=base;
+ // Trend / structure
+ if(X.st.trend===d)s+=10;else if(X.st.trend===-d)s-=12;
+ if((X.e[34]-X.e[50])*d>0)s+=8;else s-=8;
+ if(X.vw!=null&&(X.c-X.vw)*d>0)s+=5;
+ // Volume: breakout requires stronger participation; pullbacks prefer contraction before expansion.
+ if(/Breakout|Breakdown/.test(D.t))s+=X.rvolTD>=2?15:X.rvolTD>=1.5?10:-12;
+ else{s+=X.contr?8:-4;s+=X.rvolTD>=1.2?5:0;}
+ // Relative strength
  const rs1=rs&&rs.d1w!=null?rs.d1w:0,rsSec=rs&&rs.d1ws!=null?rs.d1ws:0;
- if(rs1*d>0)s+=7;if(rsSec*d>0)s+=4;if(X.tlS*d>0)s+=5;
- if(X.rvolTD>=2)s+=4;if(X.failedUp&&d<0||X.failedDn&&d>0)s+=6;
- if(/Pullback/.test(D.t)){const ok=d>0?X.rsi>=45&&X.rsi<=68:X.rsi>=32&&X.rsi<=55;s+=ok?6:-6;if(D.stabilized)s+=5}
- return Math.max(0,Math.min(100,Math.round(s)))}
+ if(rs1*d>=2)s+=10;else if(rs1*d>0)s+=5;else s-=8;
+ if(rs&&rs.d1ws!=null){if(rsSec*d>=1)s+=6;else if(rsSec*d>0)s+=3;else s-=5;}
+ // TestLine and trigger quality
+ if(X.tlS*d>0)s+=5;else s-=3;
+ if(D.triggerQuality)s+=10;
+ if(X.failedUp&&d>0||X.failedDn&&d<0)s-=15;
+ if(X.rvolTD>=2)s+=3;
+ if(/Pullback/.test(D.t)){const ok=d>0?X.rsi>=45&&X.rsi<=68:X.rsi>=32&&X.rsi<=55;s+=ok?5:-8;if(D.stabilized)s+=4}
+ if(X.contr&&D.triggerConfirmed)s+=5;
+ return Math.max(0,Math.min(100,Math.round(s)));
+}
 function plan(X,d,cfg,opp){
  const a=X.a,entry=d>0?X.hi+.05*a:X.lo-.05*a,zf=d>0?Math.min(X.e[34],X.e[50]):Math.max(X.e[34],X.e[50]),sw=d>0?X.st.sl:X.st.sh;
  let stp=d>0?Math.min(sw==null?Infinity:sw,zf-.25*a):Math.max(sw==null?-Infinity:sw,zf+.25*a),risk=(entry-stp)*d,src='Structure';
  if(!(risk>0))return{valid:false,reason:'Invalid structural stop'};
- if(risk>2*a)return{valid:false,reason:'Structural risk > 2 ATR'};
- if(risk<.5*a){risk=.5*a;stp=entry-d*risk;src='Structure + min ATR'}
+ if(risk>1.75*a)return{valid:false,reason:'Structural risk > 1.75 ATR'};
+ if(risk<.7*a){risk=.7*a;stp=entry-d*risk;src='Structure + 0.7 ATR floor'}
  const room=opp!=null&&(opp-entry)*d>0?(opp-entry)*d/risk:9;
  if(room<1)return{valid:false,reason:'Less than 1R room to structure',d,entry,stop:stp,risk,src,room,rr:cfg.tr};
- const t2=entry+d*risk*cfg.tr,t1=room>=1&&room<cfg.tr?opp:entry+d*risk*Math.max(1,cfg.tr/2);
- return{valid:true,d,entry,stop:stp,t1,t2,risk,src,room,rr:cfg.tr,shares:Math.max(0,Math.floor(cfg.acct*cfg.rp/100/risk))}}
+ const t2=entry+d*risk*cfg.tr,t1=room<cfg.tr?opp:entry+d*risk*Math.max(1,cfg.tr/2);
+ return{valid:true,d,entry,stop:stp,t1,t2,risk,src,room,rr:cfg.tr,shares:Math.max(0,Math.floor(cfg.acct*cfg.rp/100/risk))}
+}
 function execScore(pl,X,D,px,reg,d){
  if(!pl||!pl.valid)return 0;
- let s=Math.min(pl.room,3)/3*35;const rk=pl.risk/X.a;s+=rk>=.5&&rk<=2?20:5;
- const chase=D.chase;s+=chase<=1?20:chase<=2?12:chase<=2.5?5:0;
- const dist=Math.abs(pl.entry-px)/X.a;s+=dist<=.35?15:dist<=1?8:0;s+=reg.dir===d?10:reg.dir===0?5:0;
- s+=D.triggerConfirmed?5:0;return Math.round(s)}
+ let s=Math.min(pl.room,3)/3*35;
+ const rk=pl.risk/X.a;s+=rk>=.7&&rk<=1.75?20:0;
+ const chase=D.chase;s+=chase<=.75?20:chase<=1.25?12:chase<=1.75?5:0;
+ const dist=Math.abs(pl.entry-px)/X.a;s+=dist<=.25?15:dist<=.6?10:dist<=1?5:0;
+ s+=reg.dir===d?10:reg.dir===0?5:0;
+ s+=D.triggerConfirmed&&D.triggerQuality?10:0;
+ return Math.round(s);
+}
 function regime(A){
  const sc=['SPY','QQQ','IWM'].map(k=>{const x=A[k];return x?Math.round(['D','1H','30m'].reduce((t,n)=>t+(x[n]?x[n].B:50),0)/3):50}),m=sc.reduce((a,b)=>a+b,0)/3,sp=A.SPY&&A.SPY.D,vp=sp?sp.a/sp.c*100:1;
- return{sc,dir:m>=60?1:m<=40?-1:0,tag:m>=60?'Risk-On':m<=40?'Risk-Off':'Neutral/Mixed',vol:vp>1.6?'High volatility':vp<.8?'Low volatility':'Normal volatility'}}
+ return{sc,dir:m>=60?1:m<=40?-1:0,tag:m>=60?'Risk-On':m<=40?'Risk-Off':'Neutral/Mixed',vol:vp>1.6?'High volatility':vp<.8?'Low volatility':'Normal volatility'}
+}
 function RS(s,Dd){const r=Dd.D[s],sp=Dd.D.SPY,sec=Dd.D[SC.SEC[s]],g=(x,k)=>x&&x.length>k?(x[x.length-1].c/x[x.length-1-k].c-1)*100:0,o={};
  [[1,'d1'],[5,'d1w'],[21,'d1m']].forEach(([k,nm])=>{o[nm]=g(r,k)-g(sp,k);o[nm+'s']=sec?g(r,k)-g(sec,k):null});
  o.quad=(g(r,5)>=0?'Price↑':'Price↓')+' '+(o.d1w>=0?'RS↑':'RS↓');return o}
 function evalSym(s,A,Dd,cfg,reg){
- const a=A[s];if(!a||!a['30m'])return null;
- const X=a['30m'],B=nm=>a[nm]?a[nm].B:50,W={D:.3,'1H':.3,'30m':.4};
- const raw=Object.keys(W).reduce((t,k)=>t+W[k]*B(k),0),d=raw>=55?1:raw<=45?-1:0,tBase=Math.abs(raw-50)*2;
- const dirs=SC.tfs.map(([nm])=>B(nm)>=60?1:B(nm)<=40?-1:0),up=dirs.filter(x=>x>0).length,dn=dirs.filter(x=>x<0).length;
- const mtf=up===3?'Aligned bullish':dn===3?'Aligned bearish':(dirs[0]>0&&dirs[1]>0&&dirs[2]<0)||(dirs[0]<0&&dirs[1]<0&&dirs[2]>0)?'Transitioning':up===2?'Mostly bullish':dn===2?'Mostly bearish':'Mixed';
- const rs=RS(s,Dd),px=X.c,D=d?detect(X,d):{t:'No Setup',extL:'NORMAL',ext:0,inZone:false,quality:false,chase:0,triggerConfirmed:false,stabilized:false};
- const al=d?dirs.filter(x=>x===d).length:0,cp=v=>Math.max(0,Math.min(5,v))/5*7.5,tScore=Math.round(tBase*.55+al/3*20+(d?cp((rs.d1w||0)*d)+cp((rs.d1ws==null?0:rs.d1ws)*d):0));
- const hs=(a['1H']||a['30m']).st,opp=d>0?hs.sh:hs.sl;let pl=null,sS=0,eS=0;
- if(d&&D.quality){pl=plan(X,d,cfg,opp);sS=score(X,d,D,rs);eS=execScore(pl,X,D,px,reg,d)}else if(D.t==='Extended / Chasing')sS=10;
- const hard=!!(pl&&pl.valid&&D.quality&&D.extL==='NORMAL'&&sS>=55&&eS>=50&&rs.d1w*d>-2&&(rs.d1ws==null||rs.d1ws*d>-2)),overall=pl&&pl.valid?Math.round(.3*tScore+.4*sS+.3*eS):0,ev=[];
- if(X.cross)ev.push(`EMA 34/50 cloud cross (${X.crossDir>0?'bull':'bear'})`);if(X.reclaim)ev.push(`EMA34 ${X.reclaim>0?'reclaim':'rejection'}`);
- if(X.vcross)ev.push(`VWAP ${X.vcross>0?'reclaim':'rejection'}`);if(X.st.bos)ev.push('Break of structure '+(X.st.bos>0?'up':'down'));
- if(X.retU||X.retD)ev.push('Breakout retest');if(X.rvolTD>=2)ev.push('RVOL expansion');if(d&&D.inZone)ev.push('Pullback into EMA zone');if(X.failedUp||X.failedDn)ev.push('Failed breakout/reclaim');
- return{sym:s,d,setup:D.t,extL:D.extL,tScore,sScore:sS,eScore:eS,overall,hard,pri:hard?(overall>=75?'A':overall>=60?'B':overall>=45?'C':'–'):'–',plan:pl&&pl.valid?pl:null,rvol:X.rvol,rvolTD:X.rvolTD,rs,mtf,a,price:px,atr:X.a,ev,aX:X,triggerConfirmed:D.triggerConfirmed,stabilized:D.stabilized}}
+ const a=A[s];if(!a||!a['30m']||!a['1H']||!a.D)return null;
+ const X=a['30m'],B=nm=>a[nm]?a[nm].B:50;
+ const dirs=SC.tfs.map(([nm])=>B(nm)>=55?1:B(nm)<=45?-1:0),up=dirs.filter(x=>x>0).length,dn=dirs.filter(x=>x<0).length;
+ const mtf=up===3?'Aligned bullish':dn===3?'Aligned bearish':up===2?'Mostly bullish':dn===2?'Mostly bearish':'Mixed';
+ const raw=.30*B('D')+.30*B('1H')+.40*B('30m'),d=raw>=55?1:raw<=45?-1:0;
+ const rs=RS(s,Dd),px=X.c,D=d?detect(X,d):{t:'No Setup',extL:'NORMAL',ext:0,inZone:false,quality:false,chase:0,triggerConfirmed:false,triggerQuality:false,stabilized:false};
+ const al=d?dirs.filter(x=>x===d).length:0,tBase=Math.abs(raw-50)*2;
+ const tScore=Math.round(tBase*.45+al/3*25+(d?Math.min(5,Math.max(-5,(rs.d1w||0)*d))/5*10+Math.min(5,Math.max(-5,(rs.d1ws==null?0:rs.d1ws)*d))/5*5:0));
+ const hs=a['1H'].st||a['30m'].st,opp=d>0?hs.sh:hs.sl;let pl=null,sS=0,eS=0;
+ const allowedSetup=['Breakout Retest','Breakdown Retest','EMA34 Pullback','EMA50 Pullback','VWAP Reclaim','VWAP Rejection','Breakout','Breakdown'].includes(D.t);
+ // Score a detected setup even before the trigger is fully confirmed.  This keeps
+ // WATCH candidates visible instead of displaying misleading 0 / 0 scores.
+ if(d&&allowedSetup){pl=plan(X,d,cfg,opp);sS=score(X,d,D,rs);eS=execScore(pl,X,D,px,reg,d)}
+ const mtfAligned=al===3;
+ const trendAligned=(X.e[34]-X.e[50])*d>0;
+ const rsOK=rs.d1w*d>1&&(rs.d1ws==null||rs.d1ws*d>0);
+ const volOK=/Breakout|Breakdown/.test(D.t)?X.rvolTD>=1.5:X.rvolTD>=1.2;
+ const extOK=D.extL==='NORMAL';
+ const regimeOK=reg.dir===0||reg.dir===d;
+ const roomOK=!!pl&&pl.valid&&pl.room>=1.5;
+ const riskOK=!!pl&&pl.valid&&pl.risk/X.a>=.7&&pl.risk/X.a<=1.75;
+ const fresh=!(SC.S[s]&&SC.S[s].setup===D.t&&SC.S[s].age>4);
+ const hard=!!(d&&allowedSetup&&mtfAligned&&trendAligned&&rsOK&&volOK&&D.triggerConfirmed&&D.triggerQuality&&extOK&&regimeOK&&roomOK&&riskOK&&fresh&&sS>=70&&eS>=60);
+ const overall=allowedSetup&&d?Math.round(.25*tScore+.35*sS+.25*eS+.15*(mtfAligned?100:0)):0;
+ // REJECT is reserved for symbols without a valid swing setup. A detected but
+ // not-yet-qualified setup remains visible as WATCH so the scanner can surface
+ // developing opportunities instead of hiding them behind hard gates.
+ const grade=hard?(overall>=85?'A+':overall>=75?'A':'QUALIFIED'):(allowedSetup&&d?'WATCH':'REJECT');
+ const fail=[];
+ if(!mtfAligned)fail.push('MTF conflict');if(!trendAligned)fail.push('EMA34/50 misaligned');if(!rsOK)fail.push('weak RS');if(!volOK)fail.push('low volume');if(!D.triggerConfirmed||!D.triggerQuality)fail.push('weak trigger');if(!extOK)fail.push('extended');if(!regimeOK)fail.push('counter-regime');if(!roomOK)fail.push('poor room');if(!riskOK)fail.push('risk/ATR');if(!fresh)fail.push('stale');if(sS<70)fail.push('score<70');if(eS<60)fail.push('execution<60');
+ const ev=[];if(X.cross)ev.push(`EMA 34/50 cloud cross (${X.crossDir>0?'bull':'bear'})`);if(X.reclaim)ev.push(`EMA34 ${X.reclaim>0?'reclaim':'rejection'}`);if(X.vcross)ev.push(`VWAP ${X.vcross>0?'reclaim':'rejection'}`);if(X.st.bos)ev.push('Break of structure '+(X.st.bos>0?'up':'down'));if(X.retU||X.retD)ev.push('Breakout retest');if(X.rvolTD>=2)ev.push('RVOL expansion');if(d&&D.inZone)ev.push('Pullback into EMA zone');if(X.failedUp||X.failedDn)ev.push('Failed breakout/reclaim');
+ return{sym:s,d,setup:D.t,extL:D.extL,tScore,sScore:sS,eScore:eS,overall,hard,grade,fail,pri:hard?(overall>=85?'A+':overall>=75?'A':'QUALIFIED'):'–',plan:pl&&pl.valid?pl:null,rvol:X.rvol,rvolTD:X.rvolTD,rs,mtf,a,price:px,atr:X.a,ev,aX:X,triggerConfirmed:D.triggerConfirmed,triggerQuality:D.triggerQuality,stabilized:D.stabilized};
+}
 function state(R){
  const p=SC.S[R.sym]||{state:'WATCH'};let st=p.state,tr=p.trade;const px=R.price;
  const jr=()=>JSON.parse(store.get('jr')||'[]'),sj=j=>store.set('jr',JSON.stringify(j.slice(-500)));
@@ -1134,7 +1178,7 @@ async function scan(){
    if(SC.prev[k])r.ev.filter(e=>!SC.prev[k].includes(e)).forEach(e=>notify(`${k}: ${e}`));SC.prev[k]=r.ev;out.push(r)}catch(e){bad.push(`${k} (${e.message})`)}});
   SC.diag=bad.length?'Skipped: '+bad.join(' · '):'';
   out.sort((a,b)=>b.overall-a.overall||b.tScore-a.tScore);const ms=+$('sms').value||0,tot=out.length;store.set('csf',JSON.stringify([$('sms').value,$('sbo').checked,$('shx').checked]));
-  SC.res=out.filter(r=>r.overall>=ms&&(!$('sbo').checked||r.d>0)&&(!$('shx').checked||r.extL==='NORMAL'));SC.hid=tot-SC.res.length;if(!SC.sel||!SC.res.find(x=>x.sym===SC.sel))SC.sel=SC.res[0]&&SC.res[0].sym||'';
+  SC.res=out.filter(r=>r.grade!=='REJECT'&&r.setup!=='No Setup'&&r.overall>=ms&&(!$('sbo').checked||r.d>0)&&(!$('shx').checked||r.extL==='NORMAL'));SC.hid=tot-SC.res.length;if(!SC.sel||!SC.res.find(x=>x.sym===SC.sel))SC.sel=SC.res[0]&&SC.res[0].sym||'';
   store.set('scs',JSON.stringify(SC.S));renderS();if(rows.length)drawPlan();
   $('smsg').textContent=`${out.length} scanned${SC.hid?', '+SC.hid+' hidden by filters':''}${bad.length?', '+bad.length+' skipped':''} · ${SC.R.tag} · ${new Date().toLocaleTimeString()} · ${((performance.now()-T0)/1000).toFixed(1)}s (data ${((T1-T0)/1000).toFixed(1)}s)`;
  }catch(e){$('smsg').textContent=e.message;$('smsg').className='err'}finally{SC.busy=false;$('srun').disabled=false}}
@@ -1142,15 +1186,16 @@ SC.sort={k:'',dir:-1};
 const SORTK={'RS vs SPY 1D':'d1','RS vs SPY 1W':'d1w'};
 function renderS(){
  const R=SC.R,rs=SC.sort.k?[...SC.res].sort((a,b)=>SC.sort.dir*(a.rs[SC.sort.k]-b.rs[SC.sort.k])):SC.res;SC.view=rs;
- $('sreg').innerHTML=(R?chip('Regime',R.tag,R.dir>0?'up':R.dir<0?'dn':'')+chip('Volatility',R.vol)+chip('SPY / QQQ / IWM',R.sc.join(' / '))+chip('Candidates',rs.filter(r=>r.plan).length):'<span class="hint">Press Scan to load Daily, 1H and 30m bars for your watchlist.</span>')+(SC.diag?`<div class="hint dn" style="width:100%">${SC.diag}</div>`:'');
- $('stab').innerHTML='<thead><tr>'+['Ticker','Setup','Bias','RVOL','RS vs SPY 1D','RS vs SPY 1W','Extension','MTF','State','Pri'].map(h=>{const k=SORTK[h];return k?`<th data-sort="${k}" style="cursor:pointer" title="Click to sort">${h}${SC.sort.k===k?(SC.sort.dir<0?' ▼':' ▲'):' ↕'}</th>`:`<th>${h}</th>`}).join('')+'</tr></thead><tbody>'+
-  rs.map(r=>{const p=r.plan;return`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b> <button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td><td>${r.setup}</td><td class="${r.d>0?'up':r.d<0?'dn':''}">${r.d>0?'Long':r.d<0?'Short':'–'}</td>`+
-   `<td>${fm(r.rvolTD,1)}</td><td class="${r.rs.d1>=0?'up':'dn'}">${fm(r.rs.d1,1)}%</td><td class="${r.rs.d1w>=0?'up':'dn'}">${fm(r.rs.d1w,1)}%</td><td>${r.extL}</td><td>${r.mtf}</td><td>${r.state}</td><td>${r.pri}</td></tr>`}).join('')+'</tbody>';
- detS();renderAlerts();$('sjr').innerHTML=jsum()}
+ $('sreg').innerHTML=(R?chip('Regime',R.tag,R.dir>0?'up':R.dir<0?'dn':'')+chip('Volatility',R.vol)+chip('SPY / QQQ / IWM',R.sc.join(' / '))+chip('Candidates',rs.filter(r=>r.hard).length):'<span class="hint">Press Scan to load Daily, 1H and 30m bars for your watchlist.</span>')+(SC.diag?`<div class="hint dn" style="width:100%">${SC.diag}</div>`:'');
+ $('stab').innerHTML='<thead><tr>'+['Ticker','Setup','Bias','Score','RVOL','RS 1W','Extension','MTF','Grade','State'].map(h=>{const k=SORTK[h];return k?`<th data-sort="${k}" style="cursor:pointer" title="Click to sort">${h}${SC.sort.k===k?(SC.sort.dir<0?' ▼':' ▲'):' ↕'}</th>`:`<th>${h}</th>`}).join('')+'</tr></thead><tbody>'+rs.map(r=>`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b> <button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td><td>${r.setup}</td><td class="${r.d>0?'up':r.d<0?'dn':''}">${r.d>0?'Long':r.d<0?'Short':'–'}</td><td>${r.overall} <small>${r.sScore}/${r.eScore}</small></td><td>${fm(r.rvolTD,1)}</td><td class="${r.rs.d1w>=0?'up':'dn'}">${fm(r.rs.d1w,1)}%</td><td>${r.extL}</td><td>${r.mtf}</td><td><b>${r.grade}</b></td><td>${r.state}</td></tr>`).join('')+'</tbody>';
+ detS();renderAlerts();$('sjr').innerHTML=jsum()
+}
 function detS(){const r=SC.res.find(x=>x.sym===SC.sel);if(!r){$('sdet').innerHTML='';return}
- const rows=SC.tfs.map(([nm])=>{const x=r.a[nm];if(!x)return`<tr><td>${nm}</td><td colspan="8">no data</td></tr>`;
-  return`<tr><td>${nm}</td><td class="${x.B>=60?'up':x.B<=40?'dn':''}">${x.B>=60?'Bullish':x.B<=40?'Bearish':'Mixed'}</td><td>${x.B}</td><td>${x.st.label}${x.st.bos?' · BOS':''}${x.st.choch?' · CHoCH':''}</td><td>${x.bull.filter(Boolean).length}/5 · slope ${fm(x.slope,2)} · sep ${fm(x.sep,2)}A · ${fm(x.comp,2)}× avg</td><td>${fm(x.mom,1)}A</td><td>${x.vw==null?'–':(x.c>x.vw?'above ':'below ')+fm(Math.abs(x.c-x.vw)/x.a,1)+'A'}</td><td>${x.test?'green':'red'} · slope ${fm(x.tlS,2)} · acc ${fm(x.tlA,2)}</td><td>${status(x)}</td></tr>`}).join('');
- $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · ${r.setup} · ${r.rs.quad} · RS vs SPY 1D/1W/1M ${fm(r.rs.d1,1)} / ${fm(r.rs.d1w,1)} / ${fm(r.rs.d1m,1)}%${r.rs.d1ws!=null?` · vs ${SC.SEC[r.sym]} 1W ${fm(r.rs.d1ws,1)}%`:''}${r.plan?` · stop basis: ${r.plan.src} · risk ${fm(r.plan.risk)}/share · room to structure ${fm(Math.min(r.plan.room,9),1)}R`:''}</div><div class="tw"><table class="t"><thead><tr><th>TF</th><th>Trend</th><th>Score</th><th>Structure</th><th>EMA alignment (clouds)</th><th>Momentum</th><th>VWAP</th><th>TestLine</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+ const gate=(ok,label)=>`<span class="chip ${ok?'up':'dn'}" style="margin:2px">${ok?'✓':'✕'} ${label}</span>`;
+ const rows=SC.tfs.map(([nm])=>{const x=r.a[nm];if(!x)return`<tr><td>${nm}</td><td colspan="8">no data</td></tr>`;return`<tr><td>${nm}</td><td class="${x.B>=55?'up':x.B<=45?'dn':''}">${x.B>=55?'Bullish':x.B<=45?'Bearish':'Mixed'}</td><td>${x.B}</td><td>${x.st.label}${x.st.bos?' · BOS':''}${x.st.choch?' · CHoCH':''}</td><td>${x.bull.filter(Boolean).length}/5 · slope ${fm(x.slope,2)} · sep ${fm(x.sep,2)}A · ${fm(x.comp,2)}× avg</td><td>${fm(x.mom,1)}A</td><td>${x.vw==null?'–':(x.c>x.vw?'above ':'below ')+fm(Math.abs(x.c-x.vw)/x.a,1)+'A'}</td><td>${x.test?'green':'red'} · slope ${fm(x.tlS,2)} · acc ${fm(x.tlA,2)}</td><td>${status(x)}</td></tr>`}).join('');
+ const X=r.aX,D=detect(X,r.d),pl=r.plan,reg=SC.R;
+ const gates=[gate(r.mtf.startsWith('Aligned'),'MTF aligned'),gate((X.e[34]-X.e[50])*r.d>0,'EMA trend'),gate(r.rs.d1w*r.d>1,'RS 1W'),gate(r.rs.d1ws==null||r.rs.d1ws*r.d>0,'Sector RS'),gate(/Breakout|Breakdown/.test(r.setup)?r.rvolTD>=1.5:r.rvolTD>=1.2,'Volume'),gate(D.triggerConfirmed&&D.triggerQuality,'Trigger'),gate(r.extL==='NORMAL','Extension'),gate(reg.dir===0||reg.dir===r.d,'Regime'),gate(pl&&pl.valid&&pl.room>=1.5,'Room ≥1.5R'),gate(pl&&pl.valid&&pl.risk/X.a>=.7&&pl.risk/X.a<=1.75,'Risk 0.7–1.75 ATR')].join('');
+ $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · ${r.setup} · <b>${r.grade}</b> · Score ${r.overall} · Setup ${r.sScore} · Execution ${r.eScore}<br>RS vs SPY 1D/1W/1M ${fm(r.rs.d1,1)} / ${fm(r.rs.d1w,1)} / ${fm(r.rs.d1m,1)}%${r.rs.d1ws!=null?` · vs ${SC.SEC[r.sym]} 1W ${fm(r.rs.d1ws,1)}%`:''}${pl?` · stop ${r.plan.src} · risk ${fm(r.plan.risk)}/share · room ${fm(Math.min(r.plan.room,9),1)}R`:''}</div><div style="margin:8px 0">${gates}</div>${r.fail.length?`<div class="hint dn"><b>Why not qualified:</b> ${r.fail.join(' · ')}</div>`:''}<div class="tw"><table class="t"><thead><tr><th>TF</th><th>Trend</th><th>Score</th><th>Structure</th><th>EMA alignment</th><th>Momentum</th><th>VWAP</th><th>TestLine</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`}
 function renderAlerts(){$('salr').innerHTML=SC.A.length?SC.A.slice(0,30).map(a=>`${a.t} · ${a.m}`).join('<br>'):'No alerts yet.'}
 function jsum(){const J=JSON.parse(store.get('jr')||'[]').filter(j=>j.res);
  if(!J.length)return'<div class="hint">No completed setups yet. Win rate, average R, expectancy, profit factor and drawdown by setup, regime and score band appear here as setups resolve.</div>';
@@ -1172,7 +1217,7 @@ $('sexp').onclick=()=>{const h=['Ticker','Setup','Bias','RVOL','RS_1D_vs_SPY','R
  const L=[h,...SC.res.map(r=>{const p=r.plan;return[r.sym,r.setup,r.d>0?'Long':r.d<0?'Short':'',r.rvolTD.toFixed(1),r.rs.d1.toFixed(1),r.rs.d1w.toFixed(1),r.extL,r.mtf,r.state,r.pri]})].map(x=>x.map(q).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download='cytocine-scan.csv';a.click()};
 try{const v=JSON.parse(store.get('csf')||'[]');if(v[0]!=null)$('sms').value=v[0];$('sbo').checked=!!v[1];$('shx').checked=!!v[2]}catch(e){}
-$('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){}};
+if(!$('sms').value)$('sms').value='70';$('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){}};
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 try{const v=JSON.parse(store.get('csc')||'[]');['sa','sr','sm','stg'].forEach((id,i)=>{if(v[i]!=null)$(id).value=v[i]})}catch(e){}
 
