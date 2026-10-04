@@ -514,7 +514,7 @@ function begin(x,y){
  d.pts.push({...p});if(tool==='pos')d.pts.push({...p});
  D.push(d);selD=d;cur=d;d.sx=x;d.sy=y;d.drag=true}
 function down(e){
- if(e.target.closest&&e.target.closest('#tb'))return;
+ if(e.target.closest&&e.target.closest('#tb,#tbt,.pp'))return;
  const{x,y}=xy(e);if(x>PW()||x<0||y<0)return;
  if(cur){setLast(cur,x,y);finish();stop(e);return}
  if(tool!=='sel'){begin(x,y);stop(e);return}
