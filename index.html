@@ -108,22 +108,57 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 .t th{position:sticky;top:0;background:#fff;color:var(--mut);font-weight:500}
 .t tbody tr[data-s]{cursor:pointer}.t tbody tr:hover,.t tr.on{background:var(--panel)}
 .t button.op{padding:0 8px;min-height:0;height:22px}
+
+/* ---- phone: compact one-row toolbar, big Multi charts ---- */
+#mj,#lay{display:none}
+#mj button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+@media(max-width:720px){
+ header{flex:none;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+ header::-webkit-scrollbar{display:none}
+ header>*{flex:none}
+ details[open]{flex-basis:auto}
+ details .pop{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 54px);width:auto;max-height:calc(100dvh - 90px);overflow:auto;margin:0;box-shadow:0 8px 28px #0003;z-index:60}
+ body[data-tab=M] #sym,body[data-tab=M] #dlab,body[data-tab=M] #expimg,body[data-tab=M] #tf{display:none}
+ aside{max-height:58px}
+ #mbar{flex-wrap:nowrap;overflow-x:auto;padding:5px 8px;gap:6px;scrollbar-width:none}
+ #mbar::-webkit-scrollbar{display:none}
+ #mbar>*{flex:none}
+ #mslots{flex-wrap:nowrap!important}
+ #mslots input{width:70px!important}
+ #lay{display:inline-block}
+ #mj{display:flex;gap:6px;overflow-x:auto;padding:5px 8px;border-bottom:1px solid var(--line);scrollbar-width:none}
+ #mj::-webkit-scrollbar{display:none}
+ #mj button{flex:none;padding:0 12px;font-weight:600}
+ #mdraw{flex-wrap:nowrap;overflow-x:auto;padding:4px 8px;scrollbar-width:none}
+ #mdraw>*{flex:none}#mdraw .hint{display:none}
+ #mdraw button,#mdraw select,#mdraw input{height:38px;min-width:40px}
+ #grid{--cols:1!important;grid-auto-rows:min(64dvh,560px);scroll-snap-type:y proximity;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 6px calc(10px + env(safe-area-inset-bottom))}
+ #grid.c2{--cols:2!important;grid-auto-rows:min(40dvh,340px)}
+ .tile{scroll-snap-align:start;scroll-margin-top:6px}
+ .mh{padding:5px 10px;font-size:14px}
+ .mh button{height:34px;min-width:48px;font-size:16px}
+ #grid.c2 .mh{font-size:12px;padding:3px 6px}#grid.c2 .mh button{height:28px;min-width:36px}
+}
+.st{font-style:normal;color:#f5a623;cursor:pointer;padding:0 5px 0 0;font-size:14px}
+#folab{color:var(--ink)}
+@media(max-width:720px){.st{font-size:20px;padding:4px 8px 4px 0;line-height:1}}
 </style></head>
-<body>
+<body data-tab="C">
 <header>
  <b>Cytocine Levels</b>
  <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button>
  <input id="sym" value="TSLA" aria-label="Symbol">
  <select id="tf" aria-label="Timeframe"><option value="15Min" selected>15m</option><option value="30Min">30m</option><option value="1Hour">1h</option><option value="1Day">1D</option></select>
- <label>Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
+ <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
  <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when all 4 scanner conditions are met on 30m; SELL when condition 1, 2 or 3 stops holding"><input type="checkbox" id="sig" checked>Signals</label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
- <button id="add">+ Watch</button>
- <button id="dexp" title="Download all drawings and price alerts as a JSON file">⬇ Export JSON</button><button id="dimp" title="Load drawings and price alerts from a JSON file (merges with what is already here)">⬆ Import JSON</button><input type="file" id="dfile" accept=".json,application/json" class="hid">
+ <label id="folab" title="Only the starred (★) symbols get quotes, trend scores, scans and streaming"><input type="checkbox" id="fo">★ Focus <span id="fon" class="hint" style="display:inline"></span></label>
+ <button id="add" title="Add the current symbol to the watchlist">+ Watch</button>
+ <button id="dexp" title="Download the watchlist, Multi symbols, drawings and price alerts as one JSON file">⬇ Export JSON</button><button id="dimp" title="Load a JSON file made by Export JSON on another computer or phone">⬆ Import JSON</button><input type="file" id="dfile" accept=".json,application/json" class="hid">
  <details id="kd"><summary>Alpaca keys</summary><div class="pop">
   <input type="text" id="key" placeholder="API key ID" autocomplete="off">
   <input type="password" id="sec" placeholder="Secret key" autocomplete="off">
@@ -164,7 +199,8 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  </section>
  <section id="mv" class="hid">
   <div id="mbar"><span id="mslots" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>
-   <span class="hint">Type a symbol in a slot, or select a chart and click a stock in the watchlist to swap it · arrows select chart · + / − zoom · 0 fit · double-click opens in Chart</span><button id="mdbt" title="Show / hide drawing tools">✎ Draw</button></div>
+   <span class="hint">Type a symbol in a slot, or select a chart and click a stock in the watchlist to swap it · arrows select chart · + / − zoom · 0 fit · double-click opens in Chart</span><button id="lay" title="Charts per row on phones: 1 or 2">▥ 1</button><button id="mdbt" title="Show / hide drawing tools">✎ Draw</button></div>
+  <div id="mj"></div>
   <div id="mdraw">
    <button data-mt="sel" title="Select / move (Esc)">↖</button>
    <button data-mt="trend" title="Trend line">╱</button>
@@ -222,10 +258,20 @@ const STEP={'15Min':900,'30Min':1800,'1Hour':3600,'1Day':86400};
 const effD=d=>$('tf').value==='1Day'?Math.max(d,250):d; // daily bars: always load ~1 year so indicators are warmed up (Days box untouched)
 let rows=[],raw=[],clouds=[],lines=[],D=[],hist=[],SYM='',tool='sel',selD=null,hovD=null,cur=null,drag=null,hide=false,magnet=false,step=900,busy=false,tab='C',loadId=0,ORDER=[];
 const WL0=[ "AAPL", "ACB", "ACN", "AMD", "AMZN", "ASTS", "BA", "BABA", "BE", "CCJ", "CLOV", "CLSK", "CRWD", "DELL", "ENPH", "FCX", "FSLR", "GOOG", "GOOGL", "HIMS", "HOOD", "IREN", "IWM", "JMIA", "JNJ", "JPM", "KHC", "KMI", "KO", "KSS", "LLY", "LOW", "LULU", "LUV", "LVS", "LYFT", "MARA", "MBLY", "MBOT", "META", "MNDY", "MO", "MRK", "MRVL", "MSFT", "NFLX", "NVDA", "PLTR", "QQQ", "IONQ", "RIOT", "SMCI", "SOUN", "SPY", "T", "TSLA", "UAL", "UBER", "XOM"];
-const ALLOWED_WL=new Set(WL0);
-// One canonical watchlist: both the sidebar and Multi tab use exactly this universe.
-let wl=WL0.slice();
-store.set('cw',JSON.stringify(wl));
+const SYM_OK=/^[A-Z][A-Z0-9.\-]{0,9}$/;
+// Editable watchlist (+ Watch / − Watch), saved in this browser and carried between devices by Export / Import JSON.
+let wl=[];try{wl=JSON.parse(store.get('cw')||'null')}catch(e){}
+wl=Array.isArray(wl)?[...new Set(wl.map(x=>String(x).trim().toUpperCase()).filter(x=>SYM_OK.test(x)))]:[];
+if(!wl.length)wl=WL0.slice();
+const saveWL=()=>store.set('cw',JSON.stringify(wl));
+saveWL();
+// Focus: star a few symbols and switch Focus on to track only those (the full list stays saved).
+let fav=[];try{fav=JSON.parse(store.get('cfav')||'[]')}catch(e){}
+fav=Array.isArray(fav)?fav.filter(k=>wl.includes(k)):[];
+let focus=store.get('cfocus')==='1';
+const saveFav=()=>{store.set('cfav',JSON.stringify(fav));store.set('cfocus',focus?'1':'0')};
+const act=()=>focus&&fav.length?wl.filter(k=>fav.includes(k)):wl;
+function focusUI(){const o=$('fo');if(!o)return;o.checked=focus;const n=$('fon');if(n)n.textContent=focus?(fav.length?fav.length+' of '+wl.length:'no stars'):''}
 
 // ---------- chart ----------
 const chart=LightweightCharts.createChart($('ch'),{autoSize:true,
@@ -513,23 +559,34 @@ function trendOf(bars){
  const lr=linreg(cl.slice(-160),80),el=ema(lr,20),k=lr.length-1,t=lr[k]>el[k];
  return{c,t,s:c.filter(Boolean).length+(t?1:0)}}
 async function trends(){
- if(!hasKey()||!wl.length)return;tAt=Date.now();
- try{const by={},st=new Date(Date.now()-14*864e5).toISOString(),ch=[];for(let i=0;i<wl.length;i+=20)ch.push(wl.slice(i,i+20));
+ const W=act();if(!hasKey()||!W.length)return;tAt=Date.now();
+ try{const by={},st=new Date(Date.now()-14*864e5).toISOString(),ch=[];for(let i=0;i<W.length;i+=20)ch.push(W.slice(i,i+20));
   await pool(ch.map(g=>async()=>{Object.assign(by,await pageBars(g,'30Min',st))}),6);
-  T={};wl.forEach(k=>{const r=by[k]&&trendOf(by[k]);if(r)T[k]=r});renderWL();if(!tReady){tReady=true;if(tab==='M')mk()}}catch(e){}}
+  T={};W.forEach(k=>{const r=by[k]&&trendOf(by[k]);if(r)T[k]=r});renderWL();if(!tReady){tReady=true;if(tab==='M')mk()}}catch(e){}}
 function renderWL(){
- let L=wl.slice();if($('bo').checked)L=L.filter(k=>T[k]&&T[k].s===4);
+ let L=act().slice();if($('bo').checked)L=L.filter(k=>T[k]&&T[k].s===4);
  L.sort((a,b)=>((T[b]?T[b].s:-1)-(T[a]?T[a].s:-1))||((Q[b]?Q[b].c0:-99)-(Q[a]?Q[a].c0:-99)));ORDER=L.slice();
  $('wl').innerHTML=L.map(k=>{const c=Q[k],t=T[k];
   const dots=t?`<span class="dots" title="30m: 8/9, 5/12, 34/50 clouds, then TestLine (green = bullish)">${[...t.c,t.t].map(v=>`<i class="${v?'g':'r'}"></i>`).join('')}</span>`:'';
-  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}" data-s="${k}"><span><b>${k}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No bullish stocks yet</div>';mhead()}
+  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}" data-s="${k}"><span><i class="st" data-st="${k}" title="Star / unstar for Focus">${fav.includes(k)?'★':'☆'}</i><b>${k}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No bullish stocks yet</div>';mhead();addBtn()}
 async function quotes(){
- if(!hasKey()||!wl.length)return;
- try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${wl.join(',')}&feed=${$('feed').value}`);const s=j.snapshots||j,q={};
-  wl.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
-$('wl').onclick=e=>{const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else{$('sym').value=w.dataset.s;load()}}};
-// The watchlist is intentionally fixed; the existing + Watch control cannot add symbols outside the approved universe.
-$('add').onclick=()=>{const k=$('sym').value.trim().toUpperCase();if(ALLOWED_WL.has(k)){renderWL();quotes();trends()}};
+ const W=act();if(!hasKey()||!W.length)return;
+ try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${W.join(',')}&feed=${$('feed').value}`);const s=j.snapshots||j,q={};
+  W.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
+$('wl').onclick=e=>{const st=e.target.closest('.st');
+ if(st){const k=st.dataset.st;fav=fav.includes(k)?fav.filter(x=>x!==k):[...fav,k];saveFav();focusUI();if(focus){wlChanged()}else renderWL();return}
+ const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else{$('sym').value=w.dataset.s;load()}}};
+const curSym=()=>tab==='M'?(msel||''):$('sym').value.trim().toUpperCase();
+function addBtn(){const b=$('add');if(!b)return;const k=curSym(),has=wl.includes(k);b.textContent=has?'− Watch':'+ Watch';b.title=has?'Remove '+k+' from the watchlist':'Add '+(k||'the current symbol')+' to the watchlist'}
+function wlChanged(){saveWL();renderWL();quotes();trends();wsSync()}
+$('add').onclick=async()=>{const k=curSym();
+ if(!SYM_OK.test(k)){flash(tab==='M'?'Select a chart (or type a symbol into a slot) first.':'Type a valid symbol first.',1);return}
+ if(wl.includes(k)){wl=wl.filter(x=>x!==k);fav=fav.filter(x=>x!==k);saveFav();focusUI();wlChanged();flash(k+' removed from the watchlist ('+wl.length+' symbols).');return}
+ if(hasKey()){try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${k}&feed=${$('feed').value}`),x=(j.snapshots||j)[k];
+   if(!x||!(x.latestTrade||x.dailyBar||x.prevDailyBar)){flash('No market data for '+k+', not added.',1);return}}
+  catch(e){flash('Could not add '+k+': '+e.message,1);return}}
+ wl.push(k);if(focus){fav.push(k);saveFav()}focusUI();wlChanged();flash(k+' added to the watchlist ('+wl.length+' symbols).')};
+$('sym').addEventListener('input',addBtn);
 
 // ---------- real-time streaming (Alpaca WebSocket trades) ----------
 let wsCap=0,ws=null,wsOk=false,wsSubs=new Set(),wsDelay=2000,wsFatal=false,lastRec=0,dirtyMain=false,dirtyM=false,dirtyQ=false,lastM=0,lastQ=0,mbars=null;
@@ -544,7 +601,7 @@ function setWs(t,c){$('ws').textContent=t;$('ws').style.color=c||''}
 function wsClose(){wsUnlock();if(ws){ws.onclose=null;try{ws.close()}catch(e){}}ws=null;wsOk=false;wsSubs=new Set();setWs('○ stream off')}
 function wsSync(){if(!wsOk||!ws)return;
  const cap=wsCap||($('feed').value==='sip'?500:30);
- const arr=[...new Set([SYM,...mcharts.map(t=>t.sym),...wl].filter(Boolean))].slice(0,cap),nx=new Set(arr);
+ const arr=[...new Set([SYM,...mcharts.map(t=>t.sym),...act()].filter(Boolean))].slice(0,cap),nx=new Set(arr);
  const add=arr.filter(k=>!wsSubs.has(k)),del=[...wsSubs].filter(k=>!nx.has(k));
  // unsubscribe first so switching stocks never momentarily exceeds the plan's symbol limit
  if(del.length)ws.send(JSON.stringify({action:'unsubscribe',trades:del}));
@@ -615,18 +672,19 @@ const MTF='15Min',MDAYS=10,MSHOW=3; // Multi: fetch 10 days so indicators are wa
 let MR={},mcharts=[],msel='',mbusy=false,navT,MSYMS=[];
 try{MSYMS=JSON.parse(store.get('cms')||'[]').filter(Boolean).slice(0,6)}catch(e){}
 function msyms(){
- MSYMS=MSYMS.filter(k=>ALLOWED_WL.has(k));
- const fill=WL0.filter(k=>!MSYMS.includes(k));while(MSYMS.length<6&&fill.length)MSYMS.push(fill.shift());
+ MSYMS=MSYMS.filter(k=>SYM_OK.test(k));
+ const fill=act().filter(k=>!MSYMS.includes(k));while(MSYMS.length<6&&fill.length)MSYMS.push(fill.shift());
  store.set('cms',JSON.stringify(MSYMS));
  return MSYMS.slice()}
 function mslots(){const s=msyms(),h=$('mslots');h.innerHTML='';
  for(let i=0;i<6;i++){const inp=document.createElement('input');inp.value=s[i]||'';inp.placeholder='symbol';inp.maxLength=8;inp.setAttribute('aria-label','Chart '+(i+1)+' symbol');
   inp.style.cssText='width:64px;text-transform:uppercase;text-align:center';
-  inp.onchange=()=>{const v=inp.value.trim().toUpperCase();if(!v||!ALLOWED_WL.has(v)){inp.value=MSYMS[i]||'';return}
+  inp.onchange=async()=>{const v=inp.value.trim().toUpperCase();if(!v||!SYM_OK.test(v)){inp.value=MSYMS[i]||'';return}
    if(MSYMS.includes(v)&&MSYMS[i]!==v){inp.value=MSYMS[i]||'';return}
+   if(!MR[v]&&hasKey()){try{await mfetch([v],true);if(!MR[v]||!MR[v].length)throw new Error('no bars')}catch(e){inp.value=MSYMS[i]||'';$('mmsg').textContent='Could not load '+v+': '+e.message;$('mmsg').className='err';return}}
    MSYMS[i]=v;store.set('cms',JSON.stringify(MSYMS));msel=v;mk();renderWL()};
   h.appendChild(inp)}}
-function mset(sym){if(!ALLOWED_WL.has(sym))return;const s=msyms();if(s.includes(sym)){pickM(sym);return}
+function mset(sym){if(!SYM_OK.test(sym))return;const s=msyms();if(s.includes(sym)){pickM(sym);return}
  let i=s.indexOf(msel);if(i<0)i=0;MSYMS[i]=sym;store.set('cms',JSON.stringify(MSYMS));msel=sym;mk();renderWL()}
 async function mfetch(syms,full,ex){
  if(!syms.length||!hasKey())return;
@@ -661,6 +719,7 @@ function mk(){
   });
   ['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{tb.touched=true},{capture:true,passive:true}));
   });
+ $('mj').innerHTML=syms.map(k=>`<button data-s="${k}" class="${k===msel?'on':''}">${k}</button>`).join('');
  mhead();mupdate();wsSync();syms.forEach(dpull);
  const miss=syms.filter(k=>!MR[k]);
  if(miss.length){$('mmsg').textContent='Loading '+miss.join(', ')+'…';
@@ -691,15 +750,16 @@ async function mtick(){
  try{await mfetch(mcharts.map(t=>t.sym),false);lastRec=Date.now();mupdate();$('mmsg').className='';$('mmsg').textContent=`15m · ${MSHOW} days · live ● ${new Date().toLocaleTimeString()}`}
  catch(e){$('mmsg').textContent='Live update failed: '+e.message;$('mmsg').className='err'}finally{mbusy=false}
  quotes();if(Date.now()-tAt>60000)trends()}
-function pickM(sym){msel=sym;document.querySelectorAll('.tile').forEach(e=>e.classList.toggle('sel',e.dataset.s===sym));
- const el=document.querySelector('.tile.sel');if(el)el.scrollIntoView({block:'nearest'});renderWL()}
+function pickM(sym,ns){msel=sym;document.querySelectorAll('.tile').forEach(e=>e.classList.toggle('sel',e.dataset.s===sym));
+ document.querySelectorAll('#mj button').forEach(b=>b.classList.toggle('on',b.dataset.s===sym));
+ if(!ns){const el=document.querySelector('.tile.sel');if(el)el.scrollIntoView({block:'nearest'})}renderWL()}
 function openChart(sym){$('sym').value=sym;setTab('C');load()}
 function nav(d){if(tab==='S'){snav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
  const n=ORDER.length;if(!n)return;
  const i=ORDER.indexOf(SYM),k=i<0?(d>0?0:n-1):(i+d+n)%n;
  $('sym').value=ORDER[k];document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===ORDER[k]));
  clearTimeout(navT);navT=setTimeout(load,150)}
-function setTab(t){const pt=tab;cancelDraw();tab=t;store.set('ctab',t);
+function setTab(t){const pt=tab;cancelDraw();tab=t;document.body.dataset.tab=t;store.set('ctab',t);
  if(t==='C'){if(pt==='M'&&msel)$('sym').value=msel;const sy=$('sym').value.trim().toUpperCase(),dy=Math.max(2,+$('days').value||5);
   if(pt==='M'){$('col').value=$('mcol').value;$('wid').value=$('mwid').value;if(sy===SYM){D=loadDr(sy);hist=[];selD=null}} // pick up drawings made in Multi
   if(hasKey()&&(sy!==SYM||lastTf!==$('tf').value||lastDays!==dy)&&!busy)setTimeout(load,0)}
@@ -707,6 +767,12 @@ function setTab(t){const pt=tab;cancelDraw();tab=t;store.set('ctab',t);
  ['C','M','S'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();
  if(t==='M'){$('mcol').value=$('col').value;$('mwid').value=$('wid').value;const s=msyms();if(!s.includes(msel))msel=s.includes(SYM)?SYM:(s[0]||'');mk()}
  syncToggles();renderWL()}
+function setLay(n){n=n===2?2:1;$('grid').classList.toggle('c2',n===2);$('lay').textContent=n===2?'▦ 2':'▥ 1';store.set('mlay',''+n)}
+$('lay').onclick=()=>setLay($('grid').classList.contains('c2')?1:2);
+$('mj').onclick=e=>{const b=e.target.closest('button');if(!b)return;pickM(b.dataset.s,true);const t=document.querySelector('#grid .tile[data-s="'+b.dataset.s+'"]');if(t)t.scrollIntoView({block:'start',behavior:'smooth'})};
+// phone: while scrolling the 1-per-row Multi grid, the chart at the top is the selected one (so tapping a watchlist symbol swaps the chart you are looking at)
+let sfT;$('grid').addEventListener('scroll',()=>{if(!matchMedia('(max-width:720px)').matches||$('grid').classList.contains('c2'))return;clearTimeout(sfT);
+ sfT=setTimeout(()=>{const g=$('grid').getBoundingClientRect().top;let best=null,bd=1e9;document.querySelectorAll('#grid .tile').forEach(t=>{const d=Math.abs(t.getBoundingClientRect().top-g);if(d<bd){bd=d;best=t}});if(best&&best.dataset.s!==msel)pickM(best.dataset.s,true)},140)},{passive:true});
 $('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');
 $('grid').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;if(e.target.closest('.op'))openChart(t.dataset.s);else pickM(t.dataset.s)};
 $('grid').ondblclick=e=>{if(Date.now()-mDrawT<600)return;const t=e.target.closest('.tile');if(t)openChart(t.dataset.s)};
@@ -914,7 +980,7 @@ function recompute(notifyNew){
 async function scan(){
  if(SC.busy)return;if(!hasKey()){$('kd').open=true;$('smsg').textContent='Add keys or a proxy URL first.';return}
  SC.busy=true;$('srun').disabled=true;$('smsg').className='';const T0=performance.now();
- try{const ws=[...new Set(wl)];if(!ws.length)throw new Error('Watchlist is empty.');
+ try{const ws=[...new Set(act())];if(!ws.length)throw new Error('Watchlist is empty.');
   saveSF();
   const Dd=await loadScan(ws,(d,t)=>{$('smsg').textContent=`Loading 30m bars… ${d}/${t}`});
   SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd['30mX'][k]||[]});recompute(true);
@@ -1021,24 +1087,33 @@ function exportDr(){
  const out={},al=[];let nd=0;
  drKeys().sort().forEach(k=>{const sym=k.slice(3),a=loadDr(sym);if(!SYM_RE.test(sym)||!a.length)return;out[sym]=a;nd+=a.length;
   a.forEach(d=>{if(d.alert&&d.pts&&d.pts[0])al.push({symbol:sym,price:d.pts[0].p,direction:d.dir||null,fired:!!d.fired})})});
- if(!nd){flash('Nothing to export yet: no drawings or price alerts saved on this computer.',1);return}
- const data={app:'cytocine-levels',kind:'drawings',version:1,exported:new Date().toISOString(),alerts:al,drawings:out};
+ const data={app:'cytocine-levels',kind:'backup',version:2,exported:new Date().toISOString(),watchlist:wl.slice(),favorites:fav.slice(),focus,multi:msyms(),alerts:al,drawings:out};
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,DREP,2)],{type:'application/json'}));
- a.download='cytocine-drawings-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
- flash(`Exported ${nd} drawings (${al.length} price alerts) for ${Object.keys(out).length} symbols. Copy the file to the other computer and use Import JSON.`)}
+ a.download='cytocine-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+ flash(`Exported ${wl.length} watchlist symbols + ${nd} drawings (${al.length} price alerts). Copy the file to the other device and use Import JSON there.`)}
 function cleanDr(a){const need=t=>t==='pos'?3:t==='hline'||t==='text'?1:2;
  return(Array.isArray(a)?a:[]).filter(d=>d&&typeof d==='object'&&DTYPES.includes(d.type)&&Array.isArray(d.pts)&&d.pts.length>=need(d.type)&&d.pts.every(q=>q&&isFinite(q.t)&&isFinite(q.p)))
   .map(d=>{const o=JSON.parse(JSON.stringify(d,DREP));if(o.id==null)o.id=Date.now()+Math.random();if(o.text!=null)o.text=String(o.text).slice(0,200);return o})}
 async function importDr(file){
- try{const j=JSON.parse(await file.text()),src=j&&typeof j==='object'&&j.drawings&&typeof j.drawings==='object'?j.drawings:null;
-  if(!src)throw new Error('this is not a Cytocine drawings file');
+ try{const j=JSON.parse(await file.text());
+  if(!j||typeof j!=='object'||(j.app&&j.app!=='cytocine-levels'))throw new Error('this is not a Cytocine export file');
+  const src=j.drawings&&typeof j.drawings==='object'?j.drawings:{},
+   clean=a=>Array.isArray(a)?[...new Set(a.map(x=>String(x).trim().toUpperCase()).filter(x=>SYM_OK.test(x)))]:[],
+   inW=clean(j.watchlist).slice(0,500),inM=clean(j.multi).slice(0,6),inF=clean(j.favorites);
   const plan=[];let nd=0,na=0;
   Object.keys(src).forEach(k=>{const sym=k.toUpperCase();if(!SYM_RE.test(sym))return;const inc=cleanDr(src[k]).slice(0,500);if(!inc.length)return;plan.push([sym,inc]);nd+=inc.length;na+=inc.filter(d=>d.alert).length});
-  if(!plan.length)throw new Error('no valid drawings found in this file');
-  if(!confirm(`Import ${nd} drawings (${na} price alerts) for ${plan.length} symbols?\n\nOK = merge into the drawings already on this computer (a drawing with the same id is replaced, nothing else is deleted).\nCancel = do nothing.`))return;
+  if(!plan.length&&!inW.length)throw new Error('no watchlist or drawings found in this file');
+  if(!confirm(`Import ${inW.length?inW.length+' watchlist symbols and ':''}${nd} drawings (${na} price alerts) for ${plan.length} symbols?\n\nOK = continue (drawings are merged into what is already here, nothing is deleted).\nCancel = do nothing.`))return;
+  let wm='';
+  if(inW.length){const same=inW.length===wl.length&&inW.every(k=>wl.includes(k));let rep=true;
+   if(!same)rep=confirm(`Watchlist: the file has ${inW.length} symbols, this device has ${wl.length}.\n\nOK = replace this device's watchlist with the file's list.\nCancel = merge (keep mine and add the missing ones).`);
+   wl=rep?inW.slice():[...new Set([...wl,...inW])];
+   if(rep&&inM.length){MSYMS=inM.slice();store.set('cms',JSON.stringify(MSYMS));if(tab==='M')mk()}
+   if(rep){fav=inF.filter(k=>wl.includes(k));focus=!!j.focus&&fav.length>0}else fav=[...new Set([...fav,...inF.filter(k=>wl.includes(k))])];saveFav();focusUI();
+   saveWL();renderWL();quotes();trends();wsSync();wm=`${wl.length} watchlist symbols, `}
   plan.forEach(([sym,inc])=>{const m=new Map(loadDr(sym).map(d=>[String(d.id),d]));inc.forEach(d=>m.set(String(d.id),d));const arr=[...m.values()];
    store.set('dr_'+sym,JSON.stringify(arr,DREP));applyDr(sym,arr);dpush(sym)});
-  flash(`Imported ${nd} drawings (${na} price alerts) for ${plan.length} symbols.`)}
+  flash(`Imported ${wm}${nd} drawings (${na} price alerts) for ${plan.length} symbols.`)}
  catch(e){flash('Import failed: '+e.message,1)}}
 $('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile').click()};$('dfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importDr(f)};
 
@@ -1046,6 +1121,7 @@ $('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile')
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
 $('zi').onclick=()=>zoom(.7);$('zo').onclick=()=>zoom(1/.7);$('zf').onclick=zfit;
 $('tbt').onclick=()=>$('tb').classList.toggle('open');
+$('fo').onchange=()=>{focus=$('fo').checked;saveFav();focusUI();if(focus&&!fav.length)flash('Focus is on but nothing is starred, so the full list is shown. Tap ☆ next to a symbol in the watchlist.');Q={};T={};wlChanged();if(tab==='M')mk()};
 $('bo').onchange=()=>{store.set('cb',$('bo').checked?'1':'0');renderWL()};
 $('sym').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 ['tf','days','feed'].forEach(i=>$(i).onchange=()=>{if(i==='feed')MR={};if(tab==='M'){saveSettings();if(i==='feed')mk()}else load()});
@@ -1058,7 +1134,7 @@ $('sym').value=store.get('csym')||'TSLA';$('tf').value=store.get('ct')||'15Min';
 $('c4').checked=store.get('c4')==='1';$('c5').checked=store.get('c5')==='1';$('live').checked=store.get('cl')!=='0';$('sig').checked=store.get('csig')!=='0';$('sig').onchange=()=>{store.set('csig',$('sig').checked?'1':'0');sigRedraw();if($('sig').checked){sigEnsure(SYM,rows.length?rows[0].time:0,drawPlan);mcharts.forEach(t=>sigEnsure(t.sym,t.rows.length?t.rows[0].time:0,()=>tileSig(t)))}};
 magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
 $('bo').checked=store.get('cb')==='1';
-setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')!=='0');syncToggles();renderWL();
+setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')===null?!matchMedia('(max-width:720px)').matches:store.get('mdr')!=='0');setLay(+store.get('mlay')===2?2:1);syncToggles();focusUI();renderWL();
 if(hasKey()){load();quotes();trends()}else $('kd').open=true;
 {const t0=store.get('ctab');if(['M','S'].includes(t0))setTab(t0)}
 wsConnect();
