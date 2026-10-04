@@ -56,7 +56,7 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
 .dots{display:inline-flex;gap:2px}.w .dots{margin-top:3px}
 .hid{display:none!important}
 .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-#mbar,#bbar,#sbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--line)}
+#mbar,#sbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--line)}
 .hint{color:var(--mut);font-size:12px}
 #grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));grid-auto-rows:minmax(150px,1fr);gap:6px;padding:6px;overflow:auto}
 .tile{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;min-height:0;overflow:hidden;background:#fff}
@@ -76,7 +76,7 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
 #mdraw button.on,#mdbt.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 #mdraw hr{height:20px;border:0;border-left:1px solid var(--line);margin:0 3px}
 #grid.dm .tc,#grid.dm .tc *{cursor:crosshair!important}
-#mmsg,#bmsg,#smsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
+#mmsg,#smsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
 .dots i{width:8px;height:8px;border-radius:2px;display:block}.dots .g{background:var(--up)}.dots .r{background:var(--dn)}
 .w.bull{background:#2e9e4f14}
 #tbt{display:none}
@@ -100,7 +100,7 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
  #tb button,#tb select,#tb input{width:40px;height:36px;min-height:0;flex:none;font-size:13px}
  #tb hr{width:1px;height:auto;border:0;border-left:1px solid var(--line);margin:0 2px;flex:none}
 }
-#bwrap,#swrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
+#swrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
 .tw{overflow-x:auto}
 table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
 .t th,.t td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
@@ -108,12 +108,11 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 .t th{position:sticky;top:0;background:#fff;color:var(--mut);font-weight:500}
 .t tbody tr[data-s]{cursor:pointer}.t tbody tr:hover,.t tr.on{background:var(--panel)}
 .t button.op{padding:0 8px;min-height:0;height:22px}
-#beq{height:220px;margin:6px 0 10px;border:1px solid var(--line);border-radius:6px}
 </style></head>
 <body>
 <header>
  <b>Cytocine Levels</b>
- <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabB">Backtest</button><button class="tab" id="tabS">Scanner</button>
+ <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button>
  <input id="sym" value="TSLA" aria-label="Symbol">
  <select id="tf" aria-label="Timeframe"><option value="15Min" selected>15m</option><option value="30Min">30m</option><option value="1Hour">1h</option><option value="1Day">1D</option></select>
  <label>Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
@@ -124,6 +123,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
  <button id="add">+ Watch</button>
+ <button id="dexp" title="Download all drawings and price alerts as a JSON file">⬇ Export JSON</button><button id="dimp" title="Load drawings and price alerts from a JSON file (merges with what is already here)">⬆ Import JSON</button><input type="file" id="dfile" accept=".json,application/json" class="hid">
  <details id="kd"><summary>Alpaca keys</summary><div class="pop">
   <input type="text" id="key" placeholder="API key ID" autocomplete="off">
   <input type="password" id="sec" placeholder="Secret key" autocomplete="off">
@@ -186,28 +186,6 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <span class="hint">Drawings are saved per symbol and shared with the Chart tab</span>
   </div>
   <div id="grid"></div><div id="mmsg"></div>
- </section>
- <section id="bv" class="hid">
-  <div id="bbar">
-   <label>Universe <select id="bu"><option value="wl">Watchlist</option><option value="cur">Current symbol</option></select></label>
-   <label>Side <select id="bs"><option value="L">Long</option><option value="S">Short</option></select></label>
-   <label>Trend Filter <select id="blt"><option value="2">34/50</option><option value="3">72/89</option><option value="4">180/200</option></select></label>
-   <label>Entry <select id="be"><option value="flip">Signal flip</option><option value="close">Daily close</option></select></label>
-   <label>Exit <select id="bx"><option value="o">Open 9:30</option><option value="c">First 30m close (10:00)</option><option value="b">Best price in first 30m</option></select></label>
-   <label>Stop % <input id="bst" type="number" min="0" step="0.5" value="0" style="width:60px"></label>
-   <label>Cost % <input id="bco" type="number" min="0" step="0.01" value="0.05" style="width:64px"></label>
-   <label>Days <input id="bd" type="number" min="20" max="500" value="120" style="width:64px"></label>
-   <button class="p" id="brun">Run</button>
-  </div>
-  <div id="bnext" class="hint" style="padding:4px 10px">Backtest uses the same core setup/risk filters as the scanner: trend alignment, valid setup, normal extension, structural stop, score ≥70, execution score ≥50, and trigger confirmation. MTF/RS gates are not reconstructed from 30m-only history.</div>
-  <div id="bwrap">
-   <div id="bsum" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-   <div class="tw"><table class="t" id="btab"></table></div>
-   <div id="btitle" class="hint" style="margin-top:12px"></div>
-   <div id="beq"></div>
-   <div class="tw"><table class="t" id="btr"></table></div>
-  </div>
-  <div id="bmsg">Add your keys, then press Run.</div>
  </section>
  <section id="sv" class="hid">
   <div id="sbar">
@@ -353,7 +331,7 @@ async function load(){
 // live update: merge the newest bars, rebuild, keep the view where it was
 async function tick(){
  if(tab==='M'){mtick();return}
- if(tab==='B'||tab==='S')return;
+ if(tab==='S')return;
  if(!$('live').checked||document.hidden||busy||!raw.length)return;
  if(streaming()){quotes();if(Date.now()-tAt>60000)trends();return}
  busy=true;
@@ -505,7 +483,7 @@ window.addEventListener('mouseup',up);window.addEventListener('touchend',up);
 window.addEventListener('keydown',e=>{
  if(['text','password','number'].includes(e.target.type))return;
  if(e.key.startsWith('Arrow')&&e.target.tagName!=='SELECT'&&!cur&&!drag){nav(e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:1);e.preventDefault()}
- else if(e.key==='Enter'&&(tab==='M'?msel:tab==='B'?bsel:tab==='S'?SC.sel:'')&&!['INPUT','SELECT'].includes(e.target.tagName)){openChart(tab==='M'?msel:tab==='B'?bsel:SC.sel)}
+ else if(e.key==='Enter'&&(tab==='M'?msel:tab==='S'?SC.sel:'')&&!['INPUT','SELECT'].includes(e.target.tagName)){openChart(tab==='M'?msel:SC.sel)}
  else if(e.key==='+'||e.key==='='){zoom(.7);e.preventDefault()}
  else if(e.key==='-'||e.key==='_'){zoom(1/.7);e.preventDefault()}
  else if(e.key==='0'){zfit()}
@@ -552,7 +530,7 @@ async function quotes(){
  if(!hasKey()||!wl.length)return;
  try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${wl.join(',')}&feed=${$('feed').value}`);const s=j.snapshots||j,q={};
   wl.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
-$('wl').onclick=e=>{const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='B')bpick(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else{$('sym').value=w.dataset.s;load()}}};
+$('wl').onclick=e=>{const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else{$('sym').value=w.dataset.s;load()}}};
 // The watchlist is intentionally fixed; the existing + Watch control cannot add symbols outside the approved universe.
 $('add').onclick=()=>{const k=$('sym').value.trim().toUpperCase();if(ALLOWED_WL.has(k)){renderWL();quotes();trends()}};
 
@@ -718,7 +696,7 @@ async function mtick(){
 function pickM(sym){msel=sym;document.querySelectorAll('.tile').forEach(e=>e.classList.toggle('sel',e.dataset.s===sym));
  const el=document.querySelector('.tile.sel');if(el)el.scrollIntoView({block:'nearest'});renderWL()}
 function openChart(sym){$('sym').value=sym;setTab('C');load()}
-function nav(d){if(tab==='B'){bnav(d);return}if(tab==='S'){snav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
+function nav(d){if(tab==='S'){snav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
  const n=ORDER.length;if(!n)return;
  const i=ORDER.indexOf(SYM),k=i<0?(d>0?0:n-1):(i+d+n)%n;
  $('sym').value=ORDER[k];document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===ORDER[k]));
@@ -727,11 +705,11 @@ function setTab(t){const pt=tab;cancelDraw();tab=t;store.set('ctab',t);
  if(t==='C'){if(pt==='M'&&msel)$('sym').value=msel;const sy=$('sym').value.trim().toUpperCase(),dy=Math.max(2,+$('days').value||5);
   if(pt==='M'){$('col').value=$('mcol').value;$('wid').value=$('mwid').value;if(sy===SYM){D=loadDr(sy);hist=[];selD=null}} // pick up drawings made in Multi
   if(hasKey()&&(sy!==SYM||lastTf!==$('tf').value||lastDays!==dy)&&!busy)setTimeout(load,0)}
- $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('bv').classList.toggle('hid',t!=='B');$('sv').classList.toggle('hid',t!=='S');
- ['C','M','B','S'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='B')btNext();if(t==='S')renderS();
+ $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('sv').classList.toggle('hid',t!=='S');
+ ['C','M','S'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();
  if(t==='M'){$('mcol').value=$('col').value;$('mwid').value=$('wid').value;const s=msyms();if(!s.includes(msel))msel=s.includes(SYM)?SYM:(s[0]||'');mk()}
  syncToggles();renderWL()}
-$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabB').onclick=()=>setTab('B');$('tabS').onclick=()=>setTab('S');
+$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');
 $('grid').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;if(e.target.closest('.op'))openChart(t.dataset.s);else pickM(t.dataset.s)};
 $('grid').ondblclick=e=>{if(Date.now()-mDrawT<600)return;const t=e.target.closest('.tile');if(t)openChart(t.dataset.s)};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur()});
@@ -868,98 +846,10 @@ async function mmore(t){return;
   t.days=nd;mupdate()
  }catch(e){}finally{t.more=false}}
 
-// ---------- backtest + screener ----------
-// Idea: long-term EMA cloud + TestLine agree -> buy, then sell in the first 30 min of the next open (short = mirror image)
-const BT_IDS=['bu','bs','blt','be','bx','bst','bco','bd'];
-let BR={},BX={},bsel='',bch=null,bs1=null,bs2=null,bbusy=false;
+// ---------- shared helpers ----------
 const fm=(x,d=2)=>x==null||!isFinite(x)?'–':x.toFixed(d);
-const ft=t=>new Date(t*1e3).toISOString().slice(5,16).replace('T',' ');
 const chip=(a,b,c)=>`<span class="chip"><i>${a}</i><span class="${c||''}">${b}</span></span>`;
 const med=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
-function bstats(tr){const n=tr.length;if(!n)return{n:0,win:0,avg:0,med:0,pf:0,tot:0,dd:0,best:0,worst:0};
- const rs=tr.map(t=>t.ret),w=rs.filter(x=>x>0),l=rs.filter(x=>x<=0),sum=a=>a.reduce((x,y)=>x+y,0),gw=sum(w),gl=-sum(l),rrs=tr.map(t=>t.rr==null?0:t.rr);
- let eq=1,pk=1,dd=0;rs.forEach(x=>{eq*=1+x/100;pk=Math.max(pk,eq);dd=Math.min(dd,eq/pk-1)});
- return{n,win:w.length/n*100,avg:sum(rs)/n,med:med(rs),pf:gl?gw/gl:(gw?Infinity:0),tot:(eq-1)*100,dd:dd*100,best:Math.max(...rs),worst:Math.min(...rs),avgR:sum(rrs)/n,medR:med(rrs),totR:sum(rrs),ddR:Math.min(0,...rrs.reduce((a,x)=>{const q=(a.length?a[a.length-1]:0)+x;return a.concat(q)},[]))}}
-const btOpts=()=>({side:$('bs').value,lt:+$('blt').value,entry:$('be').value,exit:$('bx').value,stop:+$('bst').value||0,cost:+$('bco').value||0});
-function btCalc(raw,o){
- const r=raw.map(b=>{const t=Date.parse(b.t)/1e3,e=et(t);return{time:t+e.sh,m:e.m,o:b.o,h:b.h,l:b.l,c:b.c,v:b.v||0,t:b.t}}),n=r.length;
- if(n<260)return null;
- const want=o.side==='L'?1:-1,W=240,trades=[],signals=[];let free=80;
- const cfg={acct:100000,rp:1,am:Math.max(1,+o.stop||1.5),tr:3};
- for(let i=80;i<n-2;i++){
-  if(i<free)continue;
-  const x=analyze(r.slice(0,i+1),true);if(!x)continue;
-  const ltBull=o.lt==='2'?x.e[34]>=x.e[50]:o.lt==='3'?x.e[72]>=x.e[89]:x.e[180]>=x.e[200];const d=(x.B>=55?1:x.B<=45?-1:0);if(d!==want||ltBull!== (want===1))continue;
-  const D=detect(x,d),rs={d1:0,d1w:0,d1ws:0},reg={dir:d};
-  if(!D.quality||D.extL!=='NORMAL')continue;
-  const pl=plan(x,d,cfg,null);if(!pl.valid)continue;
-  const s=score(x,d,D,rs),e=execScore(pl,x,D,x.c,reg,d);if(s<70||e<50)continue;
-  const confirmed=o.entry==='close'?(D.triggerConfirmed||D.stabilized):D.triggerConfirmed;if(!confirmed)continue;
-  const ep=pl.entry,stop=pl.stop,t1=pl.t1,t2=pl.t2;let exit=ep,xi=i,note='';let t1hit=false;
-  for(let k=i+1;k<Math.min(n,i+W);k++){
-   const q=r[k],hitStop=d>0?q.l<=stop:q.h>=stop,hitT2=d>0?q.h>=t2:q.l<=t2;
-   if(hitStop){exit=d>0?Math.min(stop,q.o):Math.max(stop,q.o);xi=k;note='stop';break}
-   if(o.exit==='o'&&k===i+1){exit=q.o;xi=k;note='next 30m open';break}
-   if(o.exit==='c'&&k===i+1){exit=q.c;xi=k;note='first 30m close';break}
-   if(o.exit==='b'&&k===i+1){exit=d>0?q.h:q.l;xi=k;note='best first 30m';break}
-   if(hitT2){exit=t2;xi=k;note='T2';break}
-   if(!t1hit&&(d>0?q.h>=t1:q.l<=t1))t1hit=true;
-   if(t1hit&&((d>0?q.c<x.e[34]:q.c>x.e[34]))){exit=q.c;xi=k;note='trail';break}
-   exit=q.c;xi=k;
-  }
-  const risk=Math.abs(ep-stop)||x.a,rr=(exit-ep)*d/risk,ret=(rr*100-o.cost);
-  trades.push({et:r[i].time,xt:r[xi].time,ep,xp:exit,note,ret,rr,setup:D.t,score:Math.round(.3*Math.abs(x.B-50)*2+.4*s+.3*e),mfe:0,mae:0});free=xi+1;
- }
- const k=n-1,x=analyze(r,true),cs=x?(x.B>=55?1:x.B<=45?-1:0):0;
- return{trades,st:bstats(trades),base:null,match:cs===want,cur:{s:cs,age:1,p:r[k].c,u:x?x.bull[2]:false,g:x?x.test:false}}
-}
-function btCompute(){const o=btOpts();BX={};for(const k in BR){const x=btCalc(BR[k].raw,o);if(x)BX[k]=x}renderB()}
-async function btRun(){
- if(bbusy)return;
- if(!hasKey()){$('kd').open=true;$('bmsg').textContent='Add your Alpaca keys first.';return}
- const days=Math.max(20,+$('bd').value||120),syms=$('bu').value==='cur'?[$('sym').value.trim().toUpperCase()]:wl.slice();
- bbusy=true;$('brun').disabled=true;$('bmsg').className='';
- try{for(let i=0;i<syms.length;i++){const k=syms[i];
-   if(!BR[k]||BR[k].days!==days){$('bmsg').textContent=`Loading ${k} (${i+1}/${syms.length})…`;BR[k]={days,raw:await getBars(k,'30Min',startFor(days))}}}
-  Object.keys(BR).forEach(k=>{if(!syms.includes(k))delete BR[k]});
-  btCompute();$('bmsg').textContent=`${syms.length} symbols · ${days} trading days · 30m signal engine · score ≥70 · ${new Date().toLocaleTimeString()}`;
- }catch(e){$('bmsg').textContent=e.message;$('bmsg').className='err'}finally{bbusy=false;$('brun').disabled=false}}
-function renderB(){
- const ks=Object.keys(BX);
- if(!ks.length){$('bsum').innerHTML='';$('btab').innerHTML='';$('btr').innerHTML='';$('bmsg').textContent='Not enough bars to test (need about 260 per symbol). Increase Days.';return}
- const o=btOpts(),R=ks.map(k=>({k,...BX[k]})).sort((a,b)=>(b.match-a.match)||(b.st.avg-a.st.avg));
- if(!BX[bsel])bsel=R[0].k;
- const sa=bstats([].concat(...ks.map(k=>BX[k].trades))),ba=o.entry==='close'?bstats([].concat(...ks.map(k=>BX[k].base))):null,up=o.side==='L'?'up':'dn';
- $('bsum').innerHTML=chip('Symbols',ks.length)+chip('Signals now',R.filter(r=>r.match).length,up)+chip('Trades',sa.n)+chip('Win %',fm(sa.win,1))+
-  chip('Avg R',fm(sa.avgR,2),sa.avgR>=0?'up':'dn')+chip('Median R',fm(sa.medR,2))+chip('Profit factor',fm(sa.pf))+
-  (ba?chip('No-filter avg R',fm(ba.avgR,2))+chip('Edge R',fm(sa.avgR-ba.avgR,2),sa.avgR>=ba.avgR?'up':'dn'):'');
- $('btab').innerHTML='<thead><tr><th>Symbol</th><th>Now</th><th>Age</th><th>Price</th><th>Trades</th><th>Win %</th><th>Avg R</th><th>PF</th><th>Total R</th><th>Max DD R</th><th></th></tr></thead><tbody>'+
-  R.map(r=>{const c=r.cur,s=r.st,now=r.match?`<span class="${up}">● ${o.side==='L'?'BUY':'SELL'}</span>`:`<span style="color:var(--mut)">${c.s===1?'bullish':c.s===-1?'bearish':'mixed'}</span>`;
-   return`<tr data-s="${r.k}" class="${r.k===bsel?'on':''}"><td><b>${r.k}</b> <span class="dots" title="long-term cloud, TestLine"><i class="${c.u?'g':'r'}"></i><i class="${c.g?'g':'r'}"></i></span></td><td>${now}</td><td>${c.age}</td><td>${fm(c.p)}</td><td>${s.n}</td><td>${fm(s.win,1)}</td><td class="${s.avg>=0?'up':'dn'}">${fm(s.avgR,2)}</td><td>${fm(s.pf)}</td><td class="${s.totR>=0?'up':'dn'}">${fm(s.totR,1)}</td><td>${fm(s.ddR,1)}</td><td><button class="op" data-o="${r.k}" title="Open in Chart">↗</button></td></tr>`}).join('')+'</tbody>';
- detail()}
-function detail(){const k=bsel,x=BX[k];if(!x)return;
- if(!bch){bch=LightweightCharts.createChart($('beq'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:11},
-   grid:{vertLines:{visible:false},horzLines:{color:'#f0f2f5'}},rightPriceScale:{borderColor:'#e3e6ec'},timeScale:{borderColor:'#e3e6ec',timeVisible:false}});
-  bs2=bch.addLineSeries({color:'#9aa0a6',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
-  bs1=bch.addAreaSeries({lineColor:'#2962ff',topColor:'rgba(41,98,255,.25)',bottomColor:'rgba(41,98,255,0)',lineWidth:2,priceLineVisible:false})}
- const eq=tr=>{let v=100;const p=[];if(tr.length)p.push({time:tr[0].et,value:100});tr.forEach(t=>{v*=1+t.ret/100;p.push({time:t.xt,value:+v.toFixed(3)})});
-  const o=[];p.forEach(q=>{if(o.length&&q.time<=o[o.length-1].time)q={...q,time:o[o.length-1].time+1};o.push(q)});return o};
- bs1.setData(eq(x.trades));bs2.setData(x.base?eq(x.base):[]);bch.timeScale().fitContent();
- $('btitle').innerHTML=`<b>${k}</b> · ${x.st.n} trades · median ${fm(x.st.med,3)}% · best ${fm(x.st.best)}% · worst ${fm(x.st.worst)}% · blue = rule equity (starts at 100, compounded)${x.base?', grey = same entry/exit every day, no filter':''}`;
- $('btr').innerHTML='<thead><tr><th>Entry</th><th>Entry px</th><th>Exit</th><th>Exit px</th><th>Return %</th><th></th></tr></thead><tbody>'+
-  x.trades.slice(-200).reverse().map(t=>`<tr><td>${ft(t.et)}</td><td>${fm(t.ep)}</td><td>${ft(t.xt)}</td><td>${fm(t.xp)}</td><td class="${t.ret>=0?'up':'dn'}">${fm(t.ret,3)}</td><td>${t.note}</td></tr>`).join('')+'</tbody>'}
-function bpick(k){if(BX[k]){bsel=k;renderB();renderWL()}}
-function bnav(d){const ks=[...document.querySelectorAll('#btab tbody tr')].map(r=>r.dataset.s);if(!ks.length)return;
- const i=ks.indexOf(bsel);bpick(ks[(i<0?0:i+d+ks.length)%ks.length]);
- const el=document.querySelector('#btab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
-function btNext(){const n=Date.now(),w=new Date(n+et(Math.floor(n/1e3)).sh*1e3),d=w.getUTCDay(),mins=w.getUTCHours()*60+w.getUTCMinutes();
- let add=0;if(!(d>=1&&d<=5&&mins<600)){add=1;let nd=(d+1)%7;while(nd===0||nd===6){add++;nd=(nd+1)%7}}
- const t=new Date(w.getTime()+add*864e5);
- $('bnext').textContent=`Next sell window: ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][t.getUTCDay()]} ${t.getUTCMonth()+1}/${t.getUTCDate()}, 9:30–10:00 ET (market holidays not accounted for)`}
-$('btab').onclick=e=>{const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r)bpick(r.dataset.s)};
-$('brun').onclick=btRun;
-$('bbar').addEventListener('change',e=>{store.set('cbt',JSON.stringify(BT_IDS.map(i=>$(i).value)));if(!['bu','bd'].includes(e.target.id)&&Object.keys(BR).length)btCompute()});
-try{const v=JSON.parse(store.get('cbt')||'[]');BT_IDS.forEach((id,i)=>{if(v[i]!=null)$(id).value=v[i]})}catch(e){}
 
 // ================= SCANNER =================
 // layers: data (bulk) -> indicators (analyze) -> structure (pivots) -> setups (detect) -> scoring -> risk (plan) -> state machine/alerts -> UI
@@ -1005,7 +895,7 @@ function analyze(r,intra){
  const retU=lvH!=null&&mx>lvH&&l3<=lvH+.3*a&&c>lvH,retD=lvL!=null&&mn<lvL&&h3>=lvL-.3*a&&c<lvL;
  const reclaim=[0,1].some(k=>(cl[n-1-k]>e[34][n-1-k])!==(cl[n-2-k]>e[34][n-2-k]))?(c>e[34][n-1]?1:-1):0;
  const pts=[5,5,25,15,10].reduce((q,w,i)=>q+(bull[i]?w:0),0)+(test?15:0)+(slope>0?10:0)+(st.trend===1?15:st.trend===0?7.5:0)+(c>e[34][n-1]?10:0)+(intra?(c>vw?5:0):2.5);
- return{n,c,a,e:{34:e[34][n-1],50:e[50][n-1],72:e[72][n-1],89:e[89][n-1],200:e[200][n-1]},bull,B:Math.round(pts/115*100),slope,acc,comp,cross,crossDir:bull[2]?1:-1,
+ return{n,c,a,t:r[n-1].t,e:{34:e[34][n-1],50:e[50][n-1],72:e[72][n-1],89:e[89][n-1],200:e[200][n-1]},bull,B:Math.round(pts/115*100),slope,acc,comp,cross,crossDir:bull[2]?1:-1,
   sep:sep(n-1),dist34:(c-e[34][n-1])/a,dist50:(c-e[50][n-1])/a,test,tlS,tlA,vw,vcross,rvol,rvolTD,contr,st,retU,retD,reclaim,mom:(c-cl[n-11])/a,rsi:rsiF(cl),hi:r[n-1].h,lo:r[n-1].l,range,body,bodyPct:range?body/range:0,closePos,triggerUp,triggerDn,triggerQualityUp,triggerQualityDn,volExpand,stable,failedUp,failedDn}}
 const status=x=>{const s=x.bull[2]?1:-1;return x.cross?'Reversing':x.comp<.6?'Compressing':x.slope*s>0?(x.acc*s>0?'Strengthening':'Weakening'):'Weakening'};
 function detect(X,d){
@@ -1094,7 +984,7 @@ function evalSym(s,A,Dd,cfg,reg){
  // Score a detected setup even before the trigger is fully confirmed.  This keeps
  // WATCH candidates visible instead of displaying misleading 0 / 0 scores.
  if(d&&allowedSetup){pl=plan(X,d,cfg,opp);sS=score(X,d,D,rs);eS=execScore(pl,X,D,px,reg,d)}
- const mtfAligned=al===3;
+ const bm=et(Date.parse(X.t)/1e3).m,todOK=bm>=600&&bm<930,mtfAligned=al===3; // todOK: regular-session bar that is not the open/close bar
  const trendAligned=(X.e[34]-X.e[50])*d>0;
  const rsOK=rs.d1w*d>1&&(rs.d1ws==null||rs.d1ws*d>0);
  const volOK=/Breakout|Breakdown/.test(D.t)?X.rvolTD>=1.5:X.rvolTD>=1.2;
@@ -1112,24 +1002,26 @@ function evalSym(s,A,Dd,cfg,reg){
  const fail=[];
  if(!mtfAligned)fail.push('MTF conflict');if(!trendAligned)fail.push('EMA34/50 misaligned');if(!rsOK)fail.push('weak RS');if(!volOK)fail.push('low volume');if(!D.triggerConfirmed||!D.triggerQuality)fail.push('weak trigger');if(!extOK)fail.push('extended');if(!regimeOK)fail.push('counter-regime');if(!roomOK)fail.push('poor room');if(!riskOK)fail.push('risk/ATR');if(!fresh)fail.push('stale');if(sS<70)fail.push('score<70');if(eS<60)fail.push('execution<60');
  const ev=[];if(X.cross)ev.push(`EMA 34/50 cloud cross (${X.crossDir>0?'bull':'bear'})`);if(X.reclaim)ev.push(`EMA34 ${X.reclaim>0?'reclaim':'rejection'}`);if(X.vcross)ev.push(`VWAP ${X.vcross>0?'reclaim':'rejection'}`);if(X.st.bos)ev.push('Break of structure '+(X.st.bos>0?'up':'down'));if(X.retU||X.retD)ev.push('Breakout retest');if(X.rvolTD>=2)ev.push('RVOL expansion');if(d&&D.inZone)ev.push('Pullback into EMA zone');if(X.failedUp||X.failedDn)ev.push('Failed breakout/reclaim');
- return{sym:s,d,setup:D.t,extL:D.extL,tScore,sScore:sS,eScore:eS,overall,hard,grade,fail,pri:hard?(overall>=85?'A+':overall>=75?'A':'QUALIFIED'):'–',plan:pl&&pl.valid?pl:null,rvol:X.rvol,rvolTD:X.rvolTD,rs,mtf,a,price:px,atr:X.a,ev,aX:X,triggerConfirmed:D.triggerConfirmed,triggerQuality:D.triggerQuality,stabilized:D.stabilized};
+ return{sym:s,d,setup:D.t,extL:D.extL,tScore,sScore:sS,eScore:eS,overall,hard,grade,fail,pri:hard?(overall>=85?'A+':overall>=75?'A':'QUALIFIED'):'–',plan:pl&&pl.valid?pl:null,rvol:X.rvol,rvolTD:X.rvolTD,rs,mtf,a,price:px,atr:X.a,ev,aX:X,triggerConfirmed:D.triggerConfirmed,triggerQuality:D.triggerQuality,stabilized:D.stabilized,todOK};
 }
 function state(R){
  const p=SC.S[R.sym]||{state:'WATCH'};let st=p.state,tr=p.trade;const px=R.price;
  const jr=()=>JSON.parse(store.get('jr')||'[]'),sj=j=>store.set('jr',JSON.stringify(j.slice(-500)));
  const fin=(res,r)=>{const j=jr(),x=j.find(y=>y.id===tr.id);if(x){x.res=res;x.r=+r.toFixed(2);x.mfe=+tr.mfe.toFixed(2);x.mae=+tr.mae.toFixed(2);x.exit=px}sj(j);tr=null};
  if(tr){const d=tr.d,rr=(px-tr.entry)*d/tr.risk;tr.mfe=Math.max(tr.mfe,rr);tr.mae=Math.min(tr.mae,rr);
-  if(rr<=-1){fin('stop',-1);st='INVALIDATED'}else if((px-tr.t2)*d>=0){fin('T2',(tr.t2-tr.entry)*d/tr.risk);st='TARGET 2'}
+  const be=!!tr.t1h; // after T1 the stop is at breakeven; results are logged at the price actually seen, not the ideal level
+  if(rr<=(be?0:-1)){fin(be?'BE':'stop',rr);st=be?'BREAKEVEN':'INVALIDATED'}else if((px-tr.t2)*d>=0){fin('T2',rr);st='TARGET 2'}
+  else if(tr.t0&&Date.now()-tr.t0>7*864e5){fin('time',rr);st='TIME STOP'}
   else if((px-tr.t1)*d>=0){tr.t1h=1;st='TARGET 1'}else st=tr.t1h?'TARGET 1':'ENTERED'}
- else{const pl=R.plan,armed=['READY','TRIGGER NEAR'].includes(p.state),age=p.setup===R.setup?(p.age||0)+1:0;
+ else{const pl=R.plan,armed=['READY','TRIGGER NEAR'].includes(p.state),age=p.setup===R.setup?(p.bt===R.aX.t?(p.age||0):(p.age||0)+1):0; // age counts new 30m bars, not scans
   if(!pl||!R.hard||R.setup==='No Setup'||R.extL!=='NORMAL')st=['SETUP FORMING','TRIGGER NEAR','READY'].includes(p.state)?'SETUP FAILED':(R.extL==='SEVERELY EXTENDED'?'EXTENDED':'WATCH');
   else if(age>8)st='SETUP STALE';
   else{const dist=Math.abs(pl.entry-px)/R.atr,confirmed=R.triggerConfirmed&&(px-pl.entry)*pl.d>=0;
-   if(confirmed&&armed){st='ENTERED';tr={id:Date.now()+R.sym,d:pl.d,entry:pl.entry,stop:pl.stop,t1:pl.t1,t2:pl.t2,risk:pl.risk,mfe:0,mae:0};
+   if(confirmed&&armed&&R.todOK){st='ENTERED';tr={t0:Date.now(),id:Date.now()+R.sym,d:pl.d,entry:pl.entry,stop:pl.stop,t1:pl.t1,t2:pl.t2,risk:pl.risk,mfe:0,mae:0};
     const j=jr();j.push({id:tr.id,ts:new Date().toISOString(),sym:R.sym,setup:R.setup,regime:SC.R.tag,trend:R.tScore,sScore:R.sScore,score:R.overall,entry:pl.entry,stop:pl.stop,target:pl.t2});sj(j)}
    else if(confirmed)st='READY';else if(R.stabilized||dist<=1)st='TRIGGER NEAR';else st='SETUP FORMING'}
-  p.setup=R.setup;p.age=age}
- SC.S[R.sym]={state:st,trade:tr,setup:p.setup,age:p.age||0};if(st!==p.state)notify(`${R.sym}: ${p.state} → ${st}${R.plan?' ('+R.setup+')':''}`);return st}
+  p.setup=R.setup;p.age=age;p.bt=R.aX.t}
+ SC.S[R.sym]={state:st,trade:tr,setup:p.setup,age:p.age||0,bt:p.bt};if(st!==p.state)notify(`${R.sym}: ${p.state} → ${st}${R.plan?' ('+R.setup+')':''}`);return st}
 let discordLast=new Map();
 async function discordNotify(m){
  if(!$('da')||!$('da').checked)return;
@@ -1221,6 +1113,35 @@ if(!$('sms').value)$('sms').value='70';$('srun').onclick=scan;$('snot').onclick=
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 try{const v=JSON.parse(store.get('csc')||'[]');['sa','sr','sm','stg'].forEach((id,i)=>{if(v[i]!=null)$(id).value=v[i]})}catch(e){}
 
+// ---------- export / import drawings + price alerts (JSON file) ----------
+const SYM_RE=/^[A-Z][A-Z0-9.\-]{0,9}$/,DTYPES=['trend','ray','hline','rect','fib','pos','text'];
+function flash(t,e){if(tab==='M'){$('mmsg').textContent=t}else if(tab==='S'){$('smsg').textContent=t}else msg(t,e)}
+function drKeys(){const k=new Set(Object.keys(mem));try{if(ls)for(let i=0;i<ls.length;i++)k.add(ls.key(i))}catch(e){}return[...k].filter(x=>x.startsWith('dr_'))}
+function exportDr(){
+ const out={},al=[];let nd=0;
+ drKeys().sort().forEach(k=>{const sym=k.slice(3),a=loadDr(sym);if(!SYM_RE.test(sym)||!a.length)return;out[sym]=a;nd+=a.length;
+  a.forEach(d=>{if(d.alert&&d.pts&&d.pts[0])al.push({symbol:sym,price:d.pts[0].p,direction:d.dir||null,fired:!!d.fired})})});
+ if(!nd){flash('Nothing to export yet: no drawings or price alerts saved on this computer.',1);return}
+ const data={app:'cytocine-levels',kind:'drawings',version:1,exported:new Date().toISOString(),alerts:al,drawings:out};
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,DREP,2)],{type:'application/json'}));
+ a.download='cytocine-drawings-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+ flash(`Exported ${nd} drawings (${al.length} price alerts) for ${Object.keys(out).length} symbols. Copy the file to the other computer and use Import JSON.`)}
+function cleanDr(a){const need=t=>t==='pos'?3:t==='hline'||t==='text'?1:2;
+ return(Array.isArray(a)?a:[]).filter(d=>d&&typeof d==='object'&&DTYPES.includes(d.type)&&Array.isArray(d.pts)&&d.pts.length>=need(d.type)&&d.pts.every(q=>q&&isFinite(q.t)&&isFinite(q.p)))
+  .map(d=>{const o=JSON.parse(JSON.stringify(d,DREP));if(o.id==null)o.id=Date.now()+Math.random();if(o.text!=null)o.text=String(o.text).slice(0,200);return o})}
+async function importDr(file){
+ try{const j=JSON.parse(await file.text()),src=j&&typeof j==='object'&&j.drawings&&typeof j.drawings==='object'?j.drawings:null;
+  if(!src)throw new Error('this is not a Cytocine drawings file');
+  const plan=[];let nd=0,na=0;
+  Object.keys(src).forEach(k=>{const sym=k.toUpperCase();if(!SYM_RE.test(sym))return;const inc=cleanDr(src[k]).slice(0,500);if(!inc.length)return;plan.push([sym,inc]);nd+=inc.length;na+=inc.filter(d=>d.alert).length});
+  if(!plan.length)throw new Error('no valid drawings found in this file');
+  if(!confirm(`Import ${nd} drawings (${na} price alerts) for ${plan.length} symbols?\n\nOK = merge into the drawings already on this computer (a drawing with the same id is replaced, nothing else is deleted).\nCancel = do nothing.`))return;
+  plan.forEach(([sym,inc])=>{const m=new Map(loadDr(sym).map(d=>[String(d.id),d]));inc.forEach(d=>m.set(String(d.id),d));const arr=[...m.values()];
+   store.set('dr_'+sym,JSON.stringify(arr,DREP));applyDr(sym,arr);dpush(sym)});
+  flash(`Imported ${nd} drawings (${na} price alerts) for ${plan.length} symbols.`)}
+ catch(e){flash('Import failed: '+e.message,1)}}
+$('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile').click()};$('dfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importDr(f)};
+
 // ---------- wiring + restore saved settings ----------
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
 $('zi').onclick=()=>zoom(.7);$('zo').onclick=()=>zoom(1/.7);$('zf').onclick=zfit;
@@ -1239,7 +1160,7 @@ magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
 $('bo').checked=store.get('cb')==='1';
 setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')!=='0');syncToggles();renderWL();
 if(hasKey()){load();quotes();trends()}else $('kd').open=true;
-{const t0=store.get('ctab');if(['M','B','S'].includes(t0))setTab(t0)}
+{const t0=store.get('ctab');if(['M','S'].includes(t0))setTab(t0)}
 wsConnect();
 </script>
 <script>
