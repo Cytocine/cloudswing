@@ -108,19 +108,71 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 .t th{position:sticky;top:0;background:#fff;color:var(--mut);font-weight:500}
 .t tbody tr[data-s]{cursor:pointer}.t tbody tr:hover,.t tr.on{background:var(--panel)}
 .t button.op{padding:0 8px;min-height:0;height:22px}
+
+/* pause / play */
+.pp{min-width:36px;height:30px;padding:0 8px;font-size:15px;line-height:1;border-radius:6px}
+#box .pp{position:absolute;z-index:6;top:4px;right:68px;width:38px;height:34px;background:#fffffff2;box-shadow:0 1px 4px #0002}
+.pp.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+/* touch + a11y basics */
+button,select,summary,.w,.tab,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{user-select:none;-webkit-user-select:none}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#hm{display:none}#hx{display:contents}
+header{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+@media(max-width:720px){
+ #hm{display:block;min-width:44px}
+ #hx{display:none;flex-basis:100%;flex-wrap:wrap;gap:6px;align-items:center;max-height:55vh;overflow:auto;padding-top:6px;border-top:1px solid var(--line)}
+ #hdr.open #hx{display:flex}
+ header{gap:6px}
+ button,select,summary{min-height:44px}
+ .tab{padding:5px 12px}#go{padding:5px 16px}
+ input,select{min-height:44px}
+ #days{width:64px!important}
+ label{min-height:44px;gap:6px}
+ input[type=checkbox]{width:22px;height:22px;min-height:0;flex:none}
+ summary{display:flex;align-items:center;padding:0 6px}
+ .w{min-height:48px}
+ #box .pp{width:44px;height:44px;min-height:0;right:62px;top:4px;font-size:18px}
+ #tbt{width:44px!important;height:44px!important}
+ #tb{top:30px!important;left:56px!important}
+ #tb button,#tb select,#tb input{width:44px!important;height:40px!important}
+ #mdraw button,#mdraw select,#mdraw input{height:44px;min-width:44px}
+ #mbar{gap:6px}#mbar button{min-width:44px}
+ .mh{padding:2px 6px}.mh button{height:32px;min-width:36px;min-height:0}
+ .t th,.t td{padding:10px 10px}
+ .t button.op{height:36px;padding:0 12px}
+ .t th:first-child,.t td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--line)}
+ .t th:first-child{z-index:3}
+ .t tbody tr:hover td:first-child,.t tr.on td:first-child{background:var(--panel)}
+ #swrap{-webkit-overflow-scrolling:touch;padding:6px}
+ #sbar{gap:6px}
+ #stats .chip{padding:6px 10px}
+ #msg,#mmsg,#smsg{font-size:13px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ header b{display:none}
+ aside{width:150px}
+ #stats{display:none}
+ #grid{grid-auto-rows:minmax(180px,1fr)}
+}
+@media(max-width:720px) and (max-height:500px) and (orientation:landscape){
+ aside{width:100%}
+}
+@media(pointer:coarse){#tb button,#tb select{touch-action:manipulation}}
 </style></head>
 <body>
-<header>
+<header id="hdr">
  <b>Cytocine Levels</b>
  <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button>
  <input id="sym" value="TSLA" aria-label="Symbol">
  <select id="tf" aria-label="Timeframe"><option value="15Min" selected>15m</option><option value="30Min">30m</option><option value="1Hour">1h</option><option value="1Day">1D</option></select>
+ <button class="p" id="go">Load</button><button id="hm" title="Settings" aria-controls="hx" aria-expanded="false">☰</button>
+ <div id="hx">
  <label>Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
  <label><input type="checkbox" id="live" checked>Live</label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
- <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
  <button id="add">+ Watch</button>
  <button id="dexp" title="Download all drawings and price alerts as a JSON file">⬇ Export JSON</button><button id="dimp" title="Load drawings and price alerts from a JSON file (merges with what is already here)">⬆ Import JSON</button><input type="file" id="dfile" accept=".json,application/json" class="hid">
@@ -133,12 +185,14 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
   <label><input type="checkbox" id="da">Send alerts to Discord</label>
   <select id="feed"><option value="iex">IEX feed (free)</option><option value="sip">SIP feed (paid)</option></select>
   <small id="svNote">Discord webhook is sensitive. For public hosting, route it through a server/Edge Function instead of exposing it in the browser.</small></div></details>
+ </div>
 </header>
 <main>
  <aside id="wl"></aside>
  <section id="sc">
   <div id="stats"></div>
   <div id="box"><canvas id="cv"></canvas><div id="ch"></div><canvas id="dv"></canvas><div id="leg"></div>
+   <button class="pp" id="pp" title="Pause live updates (Space)" aria-pressed="false">⏸</button>
    <button id="tbt" title="Drawing tools">✎</button>
    <div id="tb">
     <button data-t="sel" title="Select / move (Esc)">↖</button>
@@ -164,7 +218,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  </section>
  <section id="mv" class="hid">
   <div id="mbar"><span id="mslots" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>
-   <span class="hint">Type a symbol in a slot, or select a chart and click a stock in the watchlist to swap it · arrows select chart · + / − zoom · 0 fit · double-click opens in Chart</span><button id="mdbt" title="Show / hide drawing tools">✎ Draw</button></div>
+   <span class="hint">Type a symbol in a slot, or select a chart and click a stock in the watchlist to swap it · arrows select chart · + / − zoom · 0 fit · double-click opens in Chart</span><button class="pp" id="mpp" title="Pause live updates (Space)" aria-pressed="false">⏸</button><button id="mdbt" title="Show / hide drawing tools">✎ Draw</button></div>
   <div id="mdraw">
    <button data-mt="sel" title="Select / move (Esc)">↖</button>
    <button data-mt="trend" title="Trend line">╱</button>
@@ -329,7 +383,9 @@ async function load(){
  }catch(e){msg(e.message,1)}finally{busy=false}}
 
 // live update: merge the newest bars, rebuild, keep the view where it was
+let paused=false;
 async function tick(){
+ if(paused)return;
  if(tab==='M'){mtick();return}
  if(tab==='S')return;
  if(!$('live').checked||document.hidden||busy||!raw.length)return;
@@ -484,6 +540,7 @@ window.addEventListener('keydown',e=>{
  if(['text','password','number'].includes(e.target.type))return;
  if(e.key.startsWith('Arrow')&&e.target.tagName!=='SELECT'&&!cur&&!drag){nav(e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:1);e.preventDefault()}
  else if(e.key==='Enter'&&(tab==='M'?msel:tab==='S'?SC.sel:'')&&!['INPUT','SELECT'].includes(e.target.tagName)){openChart(tab==='M'?msel:SC.sel)}
+ else if(e.key===' '&&tab!=='S'&&!['INPUT','SELECT','BUTTON','SUMMARY','TEXTAREA'].includes(e.target.tagName)){setPaused(!paused);e.preventDefault()}
  else if(e.key==='+'||e.key==='='){zoom(.7);e.preventDefault()}
  else if(e.key==='-'||e.key==='_'){zoom(1/.7);e.preventDefault()}
  else if(e.key==='0'){zfit()}
@@ -594,8 +651,8 @@ function onTrade(m){
  if(MR[sym]&&MR[sym].length&&upd(MR[sym]))dirtyM=true;
  if(Q[sym]){Q[sym].p=p;if(Q[sym].pc)Q[sym].c=(p/Q[sym].pc-1)*100;dirtyQ=true}}
 setInterval(()=>{
- if(dirtyMain){dirtyMain=false;if(tab==='C')rebuildKeep()}
- if(dirtyM&&tab==='M'&&Date.now()-lastM>800){dirtyM=false;lastM=Date.now();mupdate()}
+ if(dirtyMain&&!paused){dirtyMain=false;if(tab==='C')rebuildKeep()}
+ if(dirtyM&&!paused&&tab==='M'&&Date.now()-lastM>800){dirtyM=false;lastM=Date.now();mupdate()}
  if(dirtyQ&&Date.now()-lastQ>2000){dirtyQ=false;lastQ=Date.now();renderWL()}},300);
 
 // ---------- chart image export ----------
@@ -687,6 +744,7 @@ function mpaint(){const ex=[$('c4').checked,$('c5').checked],dpr=devicePixelRati
   const c=t.cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
   if(t.rows.length)back(c,t.ch.timeScale(),t.cs,t.rows,t.clouds,w,h,w-t.ch.priceScale('right').width(),ex,true);mpaintDr(t,w,h,dpr)})}
 async function mtick(){
+ if(paused)return;
  if(!$('live').checked||document.hidden||mbusy||!mcharts.length)return;
  if(streaming()){quotes();if(Date.now()-tAt>60000)trends();return}
  mbusy=true;
@@ -1159,9 +1217,19 @@ $('c4').checked=store.get('c4')==='1';$('c5').checked=store.get('c5')==='1';$('l
 magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
 $('bo').checked=store.get('cb')==='1';
 setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')!=='0');syncToggles();renderWL();
-if(hasKey()){load();quotes();trends()}else $('kd').open=true;
+if(hasKey()){load();quotes();trends()}else{$('kd').open=true;$('hdr').classList.add('open');$('hm').setAttribute('aria-expanded','true')}
 {const t0=store.get('ctab');if(['M','S'].includes(t0))setTab(t0)}
 wsConnect();
+// ---------- pause / play (freezes the display; live data keeps buffering and catches up on resume) ----------
+function setPaused(v){paused=!!v;
+ document.querySelectorAll('.pp').forEach(b=>{b.textContent=paused?'▶':'⏸';b.classList.toggle('on',paused);b.setAttribute('aria-pressed',paused?'true':'false');
+  const t=paused?'Resume live updates (Space)':'Pause live updates (Space)';b.title=t;b.setAttribute('aria-label',t)});
+ if(paused){const t='⏸ Paused — chart frozen, live data still buffering. Press ▶ to resume.';if(tab==='M'){$('mmsg').className='';$('mmsg').textContent=t}else{msg(t)}}
+ else{dirtyMain=true;dirtyM=true;tick()}}
+$('pp').onclick=$('mpp').onclick=()=>setPaused(!paused);
+// ---------- mobile: collapsible settings + accessible names ----------
+$('hm').onclick=()=>{const o=$('hdr').classList.toggle('open');$('hm').setAttribute('aria-expanded',o?'true':'false')};
+document.querySelectorAll('button[title]:not([aria-label])').forEach(b=>b.setAttribute('aria-label',b.title));
 </script>
 <script>
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
