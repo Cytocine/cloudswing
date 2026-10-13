@@ -152,7 +152,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle turns green, close is above the TestLine and the TestLine is green; SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle is green (TestLine green, close above it) and the 5/12 and 34/50 clouds are bullish and clearly separated (Gap ATR); SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -1042,8 +1042,10 @@ function sigList(bars){const n=bars.length;if(n<=SIG_WARM+1)return[];
 // SELL = after a BUY, the first bar where close falls below the TestLine or the candle turns red (close < EMA12 < EMA34).
 function chartSigList(bars){const n=bars.length,flt=($('sflt')||{}).value||'off',W=flt==='cloud'?SIG_WARM:110;if(n<=W+1)return[];
  const cl=bars.map(b=>b.c),hl=bars.map(b=>(b.h+b.l)/2),e12=ema(cl,12),e34=ema(cl,34),lr=linreg(cl,80),el=ema(lr,20),e180=ema(hl,180),e200=ema(hl,200),out=[];
- const st=i=>{const c=cl[i],test=(lr[i]+el[i])/2;if(![e12[i],e34[i],lr[i],el[i],c].every(isFinite))return null;
-  let buy=c>e12[i]&&e12[i]>e34[i]&&c>test&&lr[i]>el[i];
+ // 5/12 and 34/50 clouds (same hl2 EMAs the chart clouds use) must be bullish AND well resolved: gap >= GAP x ATR(14)
+ const h5=ema(hl,5),h12=ema(hl,12),h34=ema(hl,34),h50=ema(hl,50),AT=atr(bars),GAP=Math.max(0,+($('sgap')||{}).value||0);
+ const st=i=>{const c=cl[i],test=(lr[i]+el[i])/2;if(![e12[i],e34[i],lr[i],el[i],c,h5[i],h12[i],h34[i],h50[i],AT[i]].every(isFinite))return null;
+  let buy=c>e12[i]&&e12[i]>e34[i]&&c>test&&lr[i]>el[i]&&(h5[i]-h12[i])>=GAP*AT[i]&&(h34[i]-h50[i])>=GAP*AT[i];
   if(buy&&flt==='cloud')buy=isFinite(e180[i])&&isFinite(e200[i])&&c>Math.max(e180[i],e200[i]);
   if(buy&&flt==='rise')buy=i>=3&&test>(lr[i-3]+el[i-3])/2;
   return{buy,sell:c<test||(c<e12[i]&&e12[i]<e34[i]),px:c}};
@@ -1097,6 +1099,8 @@ $('sf').onchange=()=>{saveSF();renderS()};$('sb').onchange=()=>{saveSF();renderS
 $('sn').onchange=()=>{saveSF();if(SC.raw)recompute(false);sigRecalc()};
 $('sflt').value=store.get('csflt')||'off';if(!$('sflt').value)$('sflt').value='off';
 $('sflt').onchange=()=>{store.set('csflt',$('sflt').value);sigRecalc()};
+{const g=store.get('csgap');if(g!==null&&g!==''&&isFinite(g))$('sgap').value=g}
+$('sgap').onchange=()=>{store.set('csgap',$('sgap').value);sigRecalc()};
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 
 // ---------- export / import drawings + price alerts (JSON file) ----------
