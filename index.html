@@ -101,6 +101,8 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
  #tb hr{width:1px;height:auto;border:0;border-left:1px solid var(--line);margin:0 2px;flex:none}
 }
 #swrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
+#spanel .qov,.qov{position:absolute;left:8px;bottom:34px;z-index:5;pointer-events:none;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.qov table{border-collapse:collapse}.qov td{padding:0 6px 0 0}.qov .ok{color:var(--up)}.qov .no{color:var(--dn)}
 #spanel{flex:none;height:46%;min-height:230px;display:flex;flex-direction:column;border-top:2px solid var(--acc);background:#fff}
 #spanel .ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 10px;font-size:13px;border-bottom:1px solid var(--line)}
 #spanel .ph b{font-size:15px}#spanel .ph .sp{flex:1}
@@ -158,7 +160,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -235,12 +237,13 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label>Show <select id="sf"><option value="4">All 4 met now</option><option value="3">3 or more now</option><option value="all">All symbols</option><option value="sig" selected>BUY or SELL in last N bars</option><option value="buy">BUY only in last N bars</option><option value="sell">SELL only in last N bars</option></select></label>
    <label title="Candle size the scanner uses for the BUY/SELL rules">Timeframe <select id="stf"><option value="5Min">5m</option><option value="15Min">15m</option><option value="30Min" selected>30m</option><option value="1Hour">1h</option></select></label>
    <label title="Number of bars (of the chosen timeframe) to look back for BUY/SELL signals">Last N bars <input id="sb" type="number" min="1" max="200" value="10" style="width:56px"></label>
+   <label title="Show only signals that pass at least this many of the 6 entry-quality checks (Q column)"><input type="checkbox" id="sq">High quality only</label><label title="Minimum Q score (out of 6)">Min Q <input id="sqm" type="number" min="1" max="6" step="1" value="4" style="width:46px"></label>
    <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
   <div id="swrap"><div id="sreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
    <div class="tw"><table class="t" id="stab"></table></div><div id="sdet"></div>
    <div class="hint" style="margin:14px 0 4px"><b>Alerts</b> (a symbol newly in BUY state)</div><div id="salr" class="hint"></div></div>
-  <div id="spanel" class="hid"><div class="ph"><button id="sprev" title="Previous in list (Up arrow)">◀</button><button id="snext" title="Next in list (Down arrow)">▶</button><b id="sphs"></b><span id="sphi"></span><span class="sp"></span><button id="spopen" title="Open in the main Chart tab">↗ Chart</button><button id="spx" title="Close chart">✕</button></div><div id="sch"></div></div>
+  <div id="spanel" class="hid"><div class="ph"><button id="sprev" title="Previous in list (Up arrow)">◀</button><button id="snext" title="Next in list (Down arrow)">▶</button><b id="sphs"></b><span id="sphi"></span><span class="sp"></span><label style="font-size:12px" title="Not chasing / Relative strength / ADX labels"><input type="checkbox" id="qlp" checked>Metrics</label><label style="font-size:12px" title="Entry / Stop / Targets for the last signal"><input type="checkbox" id="spl" checked>Stop/Targets</label><button id="spopen" title="Open in the main Chart tab">↗ Chart</button><button id="spx" title="Close chart">✕</button></div><div id="sch"></div></div>
   <div id="smsg">Press Scan. Needs keys or a proxy URL.</div>
  </section>
 </main>
@@ -1002,14 +1005,16 @@ async function scan(){
  SC.busy=true;$('srun').disabled=true;$('smsg').className='';const T0=performance.now();
  try{const ws=[...new Set(act())];if(!ws.length)throw new Error('Watchlist is empty.');
   saveSF();
-  const Dd=await loadScan(ws,(d,t)=>{$('smsg').textContent=`Loading ${STFS[SC.tfs[0][1]][3]} bars… ${d}/${t}`});
-  SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd[SC.tfs[0][0]][k]||[]});SC.rawTf=SC.tfs[0][1];recompute(true);
+  const Dd=await loadScan(ws.includes('SPY')?ws:[...ws,'SPY'],(d,t)=>{$('smsg').textContent=`Loading ${STFS[SC.tfs[0][1]][3]} bars… ${d}/${t}`});
+  SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd[SC.tfs[0][0]][k]||[]});SC.rawTf=SC.tfs[0][1];SC.qc={};SC.spy=Dd[SC.tfs[0][0]]['SPY']||[];SC.mkt=htfTrend(SC.spy);SC.spyPct=dayPct(SC.spy);recompute(true);
   const n4=SC.res.filter(r=>r.met===4).length,N=Math.max(1,+$('sb').value||13),nsg=sigRowsFor('sig',N).length;
   $('smsg').textContent=`${SC.res.length} scanned · ${n4} in BUY state · ${nsg} with a BUY/SELL in the last ${N} bars${SC.bad.length?' · skipped: '+SC.bad.join(', '):''} · ${((performance.now()-T0)/1000).toFixed(1)}s`;
  }catch(e){$('smsg').textContent=e.message;$('smsg').className='err'}finally{SC.busy=false;$('srun').disabled=false}}
 function sigRowsFor(f,N){
  return SC.res.map(r=>{const w=(r.ev||[]).filter(e=>r.n-1-e.i<N);if(!w.length)return null;const last=w[w.length-1],tail=r.ev[r.ev.length-1];
-  return{...r,last,w,ago:r.n-1-last.i,spx:last.px,chg:(r.px/last.px-1)*100,inPos:tail.side==='buy'}}).filter(Boolean).filter(r=>f==='sig'||r.last.side===f)}
+  const o={...r,last,w,ago:r.n-1-last.i,spx:last.px,chg:(r.px/last.px-1)*100,inPos:tail.side==='buy'};
+  try{Object.assign(o,quality(o))}catch(e){Object.assign(o,{q:0,ext:null,rv:null,rs:null,htf:0,chk:[0,0,0,0,0,0]})}return o}).filter(Boolean).filter(r=>f==='sig'||r.last.side===f)
+  .filter(r=>!($('sq')&&$('sq').checked)||r.q>=Math.max(1,Math.min(6,+$('sqm').value||4)))}
 function renderS(){
  const f=$('sf').value,all=SC.res,sigMode=['sig','buy','sell'].includes(f),N=Math.max(1,Math.min(200,+$('sb').value||13)),p=v=>fm(v,v<10?3:2),
   etT=t=>new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -1017,12 +1022,12 @@ function renderS(){
  if(sigMode){
   let rs=sigRowsFor(f,N);const nb=rs.filter(r=>r.last.side==='buy').length,ns=rs.length-nb;
   rs=SC.sort.k?[...rs].sort((a,b)=>SC.sort.dir*(a[SC.sort.k]-b[SC.sort.k])):rs.sort((a,b)=>a.ago-b.ago||(a.sym<b.sym?-1:1));SC.view=rs;SC.sigView=rs;
-  $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('Last '+N+' bars','BUY '+nb+' · SELL '+ns,nb?'up':'')+chip('Gap ATR','≥ '+fm(+$('sgap').value||0,2))+chip('Cooldown',(+$('scd').value||0)+' bars'):'';
-  $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th>Signal</th><th data-sort="ago" title="30m bars since the signal bar (0 = the current bar)">Bars ago</th><th title="Start of the 30m bar that gave the signal (New York time)">Bar (ET)</th><th data-sort="spx">Signal px</th><th data-sort="chg" title="Price now vs the close of the signal bar">Since %</th><th title="IN = the last signal of any age was a BUY, so the long is still open by these rules">Now</th><th>Events in window</th><th></th></tr></thead><tbody>'+
+  $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('Last '+N+' bars','BUY '+nb+' · SELL '+ns,nb?'up':'')+chip('Market (SPY)',SC.mkt>0?'Bullish':SC.mkt<0?'Bearish':'Mixed',SC.mkt>0?'up':SC.mkt<0?'dn':'')+chip('Gap ATR','≥ '+fm(+$('sgap').value||0,2))+chip('Cooldown',(+$('scd').value||0)+' bars'):'';
+  $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th>Signal</th><th data-sort="ago" title="30m bars since the signal bar (0 = the current bar)">Bars ago</th><th title="Start of the 30m bar that gave the signal (New York time)">Bar (ET)</th><th data-sort="spx">Signal px</th><th data-sort="chg" title="Price now vs the close of the signal bar">Since %</th><th data-sort="q" title="Entry quality: how many of 6 checks pass (hover a score for details)">Q</th><th data-sort="ext" title="Distance of price from the 12 EMA in ATR in the trade direction. Over 2 = chasing">Ext ATR</th><th data-sort="rv" title="Signal-bar volume vs the average of the same time of day on prior sessions">RVOL</th><th title="Higher-timeframe trend agrees (bars grouped 4-6x)">HTF</th><th data-sort="rs" title="Today % change minus SPY today % change">RS vs SPY</th><th title="IN = the last signal of any age was a BUY, so the long is still open by these rules">Now</th><th>Events in window</th><th></th></tr></thead><tbody>'+
    rs.map(r=>{const buy=r.last.side==='buy',live=Date.now()<Date.parse(r.last.t)+stS()*1e3;
-    return`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b></td><td>${p(r.px)}</td><td class="${buy?'up':'dn'}"><b>${buy?'BUY':'SELL'}</b>${live?' ·live':''}</td><td>${r.ago===0?'now':r.ago}</td><td>${etT(r.last.t)}</td><td>${p(r.spx)}</td><td class="${r.chg>=0?'up':'dn'}">${r.chg>=0?'+':''}${fm(r.chg,2)}</td><td class="${r.inPos?'up':''}">${r.inPos?'IN':'out'}</td><td>${r.w.map(e=>(e.side==='buy'?'BUY':'SELL')+' −'+(r.n-1-e.i)).join(' → ')}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
+    return`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b></td><td>${p(r.px)}</td><td class="${buy?'up':'dn'}"><b>${buy?'BUY':'SELL'}</b>${live?' ·live':''}</td><td>${r.ago===0?'now':r.ago}</td><td>${etT(r.last.t)}</td><td>${p(r.spx)}</td><td class="${r.chg>=0?'up':'dn'}">${r.chg>=0?'+':''}${fm(r.chg,2)}</td>${qCells(r)}<td class="${r.inPos?'up':''}">${r.inPos?'IN':'out'}</td><td>${r.w.map(e=>(e.side==='buy'?'BUY':'SELL')+' −'+(r.n-1-e.i)).join(' → ')}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
    :'<tbody><tr><td class="hint" style="padding:14px">'+(all.length?`No ${f==='buy'?'BUY':f==='sell'?'SELL':'BUY or SELL'} signals in the last ${N} bars.`:'Press Scan.')+'</td></tr></tbody>';
-  detS();renderAlerts();return}
+  detS();renderAlerts();schDraw();return}
  const rows=all.filter(r=>f==='all'||(f==='3'?r.met>=3:r.met===4)),
   rs=SC.sort.k?[...rows].sort((a,b)=>SC.sort.dir*(a[SC.sort.k]-b[SC.sort.k])):rows;SC.view=rs;
  const n4=all.filter(r=>r.met===4).length;
@@ -1089,7 +1094,7 @@ const sigPrim={attached(p){sigReq=p.requestUpdate},detached(){sigReq=null},updat
    c.fillStyle='#fff';c.textAlign='center';c.fillText(txt,L+w/2,T+h/2+1)});
   c.restore()})}})}]}};
 try{candle.attachPrimitive(sigPrim);PILL_OK=true}catch(e){PILL_OK=false}
-let planL=[];function drawPlan(){try{const m=sigMarkers();if(PILL_OK){SIGP=m;candle.setMarkers([]);sigReq&&sigReq()}else candle.setMarkers(m)}catch(e){}}
+let planL=[];function drawPlan(){try{const m=sigMarkers();if(PILL_OK){SIGP=m;candle.setMarkers([]);sigReq&&sigReq()}else candle.setMarkers(m);drawLvMain()}catch(e){}try{qovMain()}catch(e){}}
 function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){}}
 function sigRedraw(){drawPlan();mcharts.forEach(tileSig)}
 function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw();if(SC.raw)recompute(false)}
@@ -1104,6 +1109,85 @@ async function sigEnsure(sym,rowsStartSec,done){
   g.bars=bars;g.from=Math.min(from,need);g.at=Date.now();g.list=chartSigList(bars);done&&done();
   if(SGC.size>12){for(const k of SGC.keys()){if(k!==SYM&&!mcharts.some(t=>t.sym===k)){SGC.delete(k);break}}}}
  catch(e){}finally{g.busy=false}}
+// ---- Entry quality score (Q, out of 6) ----
+// 1 not extended (<= 2 ATR from the 12 EMA) · 2 RVOL >= 1.2 · 3 higher-timeframe trend agrees · 4 beating SPY today (BUY) / lagging it (SELL)
+// 5 market (SPY higher-timeframe trend) agrees · 6 ADX(14) >= 20 (trending, not chop)
+function htfBars(bars){const F={'5Min':6,'15Min':4,'30Min':4,'1Hour':4}[SC.rawTf]||4,out=[];let cur=null,cd='',cnt=0;
+ bars.forEach(b=>{const d=et(Date.parse(b.t)/1e3).d;
+  if(!cur||d!==cd||cnt>=F){cur={h:b.h,l:b.l,c:b.c,v:b.v};out.push(cur);cd=d;cnt=1}
+  else{cur.h=Math.max(cur.h,b.h);cur.l=Math.min(cur.l,b.l);cur.c=b.c;cur.v+=b.v;cnt++}});return out}
+function htfTrend(bars){if(!bars||!bars.length)return 0;const h=htfBars(bars);if(h.length<30)return 0;
+ const cl=h.map(x=>x.c),e8=ema(cl,8),e21=ema(cl,21),n=cl.length-1;
+ return cl[n]>e21[n]&&e8[n]>e21[n]?1:cl[n]<e21[n]&&e8[n]<e21[n]?-1:0}
+function dayPct(b){if(!b||b.length<2)return null;const n=b.length-1,d=et(Date.parse(b[n].t)/1e3).d;
+ for(let j=n-1;j>=0;j--)if(et(Date.parse(b[j].t)/1e3).d!==d)return(b[n].c/b[j].c-1)*100;return null}
+function adxLast(r,n=14){if(r.length<n*3)return null;
+ let tr=0,pm=0,mm=0,adx=null,dxs=[];
+ for(let i=1;i<r.length;i++){const up=r[i].h-r[i-1].h,dn=r[i-1].l-r[i].l,P=up>dn&&up>0?up:0,M=dn>up&&dn>0?dn:0,
+   T=Math.max(r[i].h-r[i].l,Math.abs(r[i].h-r[i-1].c),Math.abs(r[i].l-r[i-1].c));
+  if(i<=n){tr+=T;pm+=P;mm+=M}else{tr=tr-tr/n+T;pm=pm-pm/n+P;mm=mm-mm/n+M}
+  if(i>=n&&tr>0){const pd=100*pm/tr,md=100*mm/tr,dx=pd+md?100*Math.abs(pd-md)/(pd+md):0;
+   if(adx===null){dxs.push(dx);if(dxs.length===n)adx=dxs.reduce((a,b)=>a+b,0)/n}else adx=(adx*(n-1)+dx)/n}}
+ return adx}
+function rvolAt(bars,i){const t=Date.parse(bars[i].t)/1e3,e=et(t);let s=0,c=0;
+ for(let j=i-1;j>=0&&c<10;j--){const x=et(Date.parse(bars[j].t)/1e3);if(x.m===e.m&&x.d!==e.d){s+=bars[j].v;c++}}
+ return c>=3&&s>0?bars[i].v/(s/c):null}
+function quality(r){const side=r.last.side,sg=side==='buy'?1:-1,bars=SC.raw&&SC.raw[r.sym];if(!bars||!bars.length)throw 0;
+ SC.qc=SC.qc||{};const key=r.sym+'|'+side+'|'+r.last.t+'|'+bars.length+'|'+bars[bars.length-1].t+'|'+r.px;if(SC.qc[key])return SC.qc[key];
+ const ext=sg*(r.px-r.ce12)/r.a,rv=rvolAt(bars,r.last.i),htf=htfTrend(bars)*sg,dp=dayPct(bars),rs=dp!=null&&SC.spyPct!=null?dp-SC.spyPct:null,adx=adxLast(bars),
+  chk=[ext<=2,rv!=null&&rv>=1.2,htf>0,rs!=null&&rs*sg>0,(SC.mkt||0)*sg>0,adx!=null&&adx>=20].map(Boolean);
+ return SC.qc[key]={q:chk.filter(Boolean).length,ext,rv,rs,htf,adx,chk}}
+function qCells(r){const nm=['Not extended (<=2 ATR from EMA12)','RVOL >= 1.2','Higher-timeframe trend agrees','Relative strength vs SPY agrees','Market (SPY) trend agrees','ADX >= 20'],
+ tip=(r.chk||[]).map((v,i)=>(v?'✓ ':'✗ ')+nm[i]).join(' · ')+(r.adx!=null?` · ADX ${fm(r.adx,0)}`:''),c=(r.chk||[]),
+ g=i=>c[i]?'up':'dn';
+ return`<td class="${r.q>=5?'up':r.q>=4?'':'dn'}" title="${tip}"><b>${r.q}/6</b></td><td class="${g(0)}">${r.ext==null?'–':fm(r.ext,1)}</td><td class="${g(1)}">${r.rv==null?'–':fm(r.rv,1)+'x'}</td><td class="${g(2)}" style="text-align:center;font-weight:700">${c[2]?'✓':'✗'}</td><td class="${g(3)}">${r.rs==null?'–':(r.rs>=0?'+':'')+fm(r.rs,1)}</td>`}
+
+// ---- Trade levels: stop = swing extreme of the last 8 bars (clamped to 1-2.5 ATR), T1 = 1.5R (take partial), T2 = 3R (trail the rest under the 12 EMA) ----
+function tradeLevels(bars,e,AT){const sg=e.side==='buy'?1:-1,i=e.i,a=AT[i];if(!(a>0)||!bars[i])return null;
+ let sw=sg>0?Infinity:-Infinity;for(let j=Math.max(0,i-7);j<=i;j++)sw=sg>0?Math.min(sw,bars[j].l):Math.max(sw,bars[j].h);
+ const entry=e.px;let risk=sg>0?entry-(sw-.1*a):(sw+.1*a)-entry;risk=Math.min(2.5*a,Math.max(a,risk));
+ const stop=entry-sg*risk,t1=entry+sg*1.5*risk,t2=entry+sg*3*risk;let st='open',h1=false;
+ for(let j=i+1;j<bars.length;j++){const b=bars[j];
+  if(sg>0?b.l<=stop:b.h>=stop){st=h1?'T1 hit, then stopped':'stopped';break}
+  if(!h1&&(sg>0?b.h>=t1:b.l<=t1)){h1=true;st='T1 hit (trail)'}
+  if(sg>0?b.h>=t2:b.l<=t2){st='T2 hit';break}}
+ return{entry,stop,t1,t2,risk,st}}
+function lvLines(ser,lv){const mk=(price,color,title)=>ser.createPriceLine({price,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});
+ return[mk(lv.entry,'#607d8b','Entry'),mk(lv.stop,'#e5252a','Stop'),mk(lv.t1,'#00b34a','T1 1.5R'),mk(lv.t2,'#007a33','T2 3R')]}
+let lvMain=[];
+function drawLvMain(){try{lvMain.forEach(l=>candle.removePriceLine(l))}catch(e){}lvMain=[];
+ const g=SGC.get(SYM);if(!$('slv').checked||!$('sig').checked||!g||!g.list.length)return;
+ const e=g.list[g.list.length-1],lv=tradeLevels(g.bars,e,atr(g.bars));
+ if(!lv||lv.st==='stopped'||lv.st==='T1 hit, then stopped'||lv.st==='T2 hit')return;lvMain=lvLines(candle,lv)}
+{const sv=store.get('cslv');if(sv==='0'){$('slv').checked=false;$('spl').checked=false}
+ const sync=c=>{$('slv').checked=$('spl').checked=c;store.set('cslv',c?'1':'0');drawLvMain();schDraw()};
+ $('slv').onchange=()=>sync($('slv').checked);$('spl').onchange=()=>sync($('spl').checked);
+ $('sq').checked=store.get('csq')==='1';{const m=store.get('csqm');if(m&&isFinite(m))$('sqm').value=m}
+ $('sq').onchange=()=>{store.set('csq',$('sq').checked?'1':'0');renderS()};$('sqm').onchange=()=>{store.set('csqm',$('sqm').value);renderS()}}
+// ---- On-chart label table: Not chasing / Relative strength / ADX ----
+const spyP={v:null,at:0,busy:false};
+async function spyEnsure(cb){if(!hasKey()||spyP.busy||Date.now()-spyP.at<60000)return;spyP.busy=true;
+ try{const b=await getBars('SPY','30Min',new Date(Date.now()-6*864e5).toISOString());spyP.v=dayPct(b);spyP.at=Date.now();cb&&cb()}catch(e){}finally{spyP.busy=false}}
+function qMini(bars,side){if(!bars||bars.length<30)return null;
+ const cl=bars.map(b=>b.c),n=cl.length-1,e12=ema(cl,12),e34=ema(cl,34);side=side||(e12[n]>=e34[n]?'buy':'sell');
+ const sg=side==='buy'?1:-1,a=atr(bars)[n],ext=a>0?sg*(cl[n]-e12[n])/a:null,adx=adxLast(bars),dp=dayPct(bars),sp=spyP.v!=null?spyP.v:SC.spyPct,rs=dp!=null&&sp!=null?dp-sp:null;
+ return{side,ext,adx,rs,ok:[ext!=null&&ext<=2,rs!=null&&rs*sg>0,adx!=null&&adx>=20]}}
+function qovFill(host,m,tf,show){let e=host.querySelector(':scope > .qov');
+ if(!e){e=document.createElement('div');e.className='qov';host.appendChild(e);if(getComputedStyle(host).position==='static')host.style.position='relative'}
+ if(!m||!show){e.style.display='none';return}
+ const row=(n,ok,v,t)=>`<tr title="${t}"><td>${n}</td><td class="${ok?'ok':'no'}"><b>${ok?'✓':'✗'}</b></td><td>${v}</td></tr>`;
+ e.style.display='';
+ e.innerHTML=`<div style="font-weight:700;margin-bottom:2px">For ${m.side==='buy'?'BUY':'SELL'} · ${tf}</div><table>`+
+  row('Not chasing',m.ok[0],m.ext==null?'–':fm(m.ext,1)+' ATR','Distance of price from the 12 EMA in the trade direction. 2 ATR or less passes.')+
+  row('Rel. strength',m.ok[1],m.rs==null?(hasKey()?'…':'–'):(m.rs>=0?'+':'')+fm(m.rs,1)+'% vs SPY','Today % change minus SPY. Positive passes for BUY, negative for SELL.')+
+  row('ADX',m.ok[2],m.adx==null?'–':fm(m.adx,0),'ADX(14) of 20 or more = trending, not chop.')+'</table>'}
+function qovMain(){const g=SGC.get(SYM),le=g&&g.list&&g.list.length?g.list[g.list.length-1].side:null;
+ qovFill($('ch'),qMini(raw,le),$('tf').selectedOptions[0].text,$('qlb').checked);spyEnsure(qovMain)}
+function qovPanel(){if(!SC.sel||!SC.raw)return;const r=SC.res.find(x=>x.sym===SC.sel),le=r&&r.ev&&r.ev.length?r.ev[r.ev.length-1].side:null;
+ qovFill($('sch'),qMini(SC.raw[SC.sel],le),stl(),$('qlp').checked);spyEnsure(qovPanel)}
+{const sv=store.get('cqlb');if(sv==='0'){$('qlb').checked=false;$('qlp').checked=false}
+ const sync=c=>{$('qlb').checked=$('qlp').checked=c;store.set('cqlb',c?'1':'0');try{qovMain()}catch(e){}try{qovPanel()}catch(e){}};
+ $('qlb').onchange=()=>sync($('qlb').checked);$('qlp').onchange=()=>sync($('qlp').checked)}
 // ---- Scanner: chart that opens below the table when a ticker is clicked ----
 let SCH=null;
 function schInit(){if(SCH)return;
@@ -1124,10 +1208,15 @@ function schDraw(){
   const now=Date.now(),st=stS()*1e3,mk=(r.ev||[]).filter(e=>rw[e.i]).map(e=>{const buy=e.side==='buy',live=now<Date.parse(e.t)+st;
    return{time:rw[e.i].time,position:buy?'belowBar':'aboveBar',color:buy?'#00b34a':'#e5252a',shape:buy?'arrowUp':'arrowDown',size:2,text:(buy?'BUY':'SELL')+(live?' ·live':'')}});
   SCH.cs.setMarkers(mk);
+  (SCH.pl||[]).forEach(l=>{try{SCH.cs.removePriceLine(l)}catch(e){}});SCH.pl=[];let lvTxt='';
+  const le=r.ev&&r.ev[r.ev.length-1];
+  if(le&&$('spl').checked){const lv=tradeLevels(bars,le,atr(bars));
+   if(lv){lvLines(SCH.cs,lv).forEach(l=>SCH.pl.push(l));const sg=le.side==='buy'?1:-1;
+    lvTxt=` · risk ${fm(lv.risk/lv.entry*100,2)}% · now ${fm((r.px-lv.entry)*sg/lv.risk,1)}R · <b>${lv.st}</b>`}}
   const key=SC.sel+'|'+tf;if(SCH.key!==key){SCH.key=key;SCH.c.priceScale('right').applyOptions({autoScale:true});const e=rw.length-1+6;SCH.c.timeScale().setVisibleLogicalRange({from:Math.max(-2,e-Math.max(120,(+$('sb').value||10)*8)),to:e})}
   const last=r.ev&&r.ev[r.ev.length-1],chg=Q[SC.sel];
   $('sphs').textContent=SC.sel;
-  $('sphi').innerHTML=`${tf} · ${f(r.px)}${chg?` <span class="${chg.c>=0?'up':'dn'}">${chg.c>=0?'+':''}${chg.c.toFixed(2)}%</span>`:''}`+(last?` · last signal <b class="${last.side==='buy'?'up':'dn'}">${last.side==='buy'?'BUY':'SELL'}</b> ${r.n-1-last.i===0?'now':(r.n-1-last.i)+' bars ago'}`:' · no signal in range')+(r.buy?' · <b class="up">BUY state</b>':r.sell?' · <b class="dn">SELL state</b>':'');
+  $('sphi').innerHTML=`${tf} · ${f(r.px)}${chg?` <span class="${chg.c>=0?'up':'dn'}">${chg.c>=0?'+':''}${chg.c.toFixed(2)}%</span>`:''}`+(last?` · last signal <b class="${last.side==='buy'?'up':'dn'}">${last.side==='buy'?'BUY':'SELL'}</b> ${r.n-1-last.i===0?'now':(r.n-1-last.i)+' bars ago'}`:' · no signal in range')+(r.buy?' · <b class="up">BUY state</b>':r.sell?' · <b class="dn">SELL state</b>':'')+lvTxt;qovPanel();
  }catch(e){}}
 $('spx').onclick=()=>{SC.sel='';renderS()};
 $('sprev').onclick=()=>snav(-1);$('snext').onclick=()=>snav(1);
@@ -1142,8 +1231,8 @@ $('stab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=
  const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){SC.sel=r.dataset.s;renderS()}};
 $('sexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  let h,rows;
- if(SC.sigView){h=['Ticker','Price','Signal','Bars_ago','Bar_start_UTC','Signal_px','Since_pct','Now','Events'];
-  rows=SC.sigView.map(r=>[r.sym,r.px.toFixed(4),r.last.side.toUpperCase(),r.ago,r.last.t,r.spx.toFixed(4),r.chg.toFixed(2),r.inPos?'IN':'out',r.w.map(e=>e.side.toUpperCase()+' -'+(r.n-1-e.i)).join(' > ')])}
+ if(SC.sigView){h=['Ticker','Price','Signal','Bars_ago','Bar_start_UTC','Signal_px','Since_pct','Now','Events','Quality','Ext_ATR','RVOL','RS_vs_SPY'];
+  rows=SC.sigView.map(r=>[r.sym,r.px.toFixed(4),r.last.side.toUpperCase(),r.ago,r.last.t,r.spx.toFixed(4),r.chg.toFixed(2),r.inPos?'IN':'out',r.w.map(e=>e.side.toUpperCase()+' -'+(r.n-1-e.i)).join(' > '),r.q,r.ext==null?'':r.ext.toFixed(2),r.rv==null?'':r.rv.toFixed(2),r.rs==null?'':r.rs.toFixed(2)])}
  else{h=['Ticker','Price','C1_Green_Candle','C2_5_12','C3_34_50','C4_Filter','Met','Sell_State','Gap_ATR','EMA5','EMA12','EMA34','EMA50','TestLine'];
   rows=SC.res.map(r=>[r.sym,r.px.toFixed(4),+r.c1,+r.c2,+r.c3,+r.c4,r.met,+r.sell,r.gap.toFixed(2),r.e5.toFixed(4),r.e12.toFixed(4),r.e34.toFixed(4),r.e50.toFixed(4),r.test.toFixed(4)])}
  const L=[h,...rows].map(x=>x.map(q).join(',')).join('\n');
