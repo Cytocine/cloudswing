@@ -152,7 +152,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle is green (TestLine green, close above it) and the 5/12 and 34/50 clouds are bullish and clearly separated (Gap ATR); SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -225,14 +225,14 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  </section>
  <section id="sv" class="hid">
   <div id="sbar">
-   <label title="How close the 30m close must be to the EMA34/50 zone, in ATR. 0 = price must be inside the zone">Near EMA34/50 (ATR) <input id="sn" type="number" min="0" step="0.1" value="0.5" style="width:60px"></label>
+   <input id="sn" type="hidden" value="0.5">
    <label>Show <select id="sf"><option value="4">All 4 met now</option><option value="3">3 or more now</option><option value="all">All symbols</option><option value="sig">BUY or SELL in last N bars</option><option value="buy">BUY only in last N bars</option><option value="sell">SELL only in last N bars</option></select></label>
    <label title="Number of 30m bars to look back for BUY/SELL signals (13 bars = one regular session)">Last N bars <input id="sb" type="number" min="1" max="200" value="13" style="width:56px"></label>
    <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
   <div id="swrap"><div id="sreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
    <div class="tw"><table class="t" id="stab"></table></div><div id="sdet"></div>
-   <div class="hint" style="margin:14px 0 4px"><b>Alerts</b> (a symbol newly meeting all 4 conditions)</div><div id="salr" class="hint"></div></div>
+   <div class="hint" style="margin:14px 0 4px"><b>Alerts</b> (a symbol newly in BUY state)</div><div id="salr" class="hint"></div></div>
   <div id="smsg">Press Scan. Needs keys or a proxy URL.</div>
  </section>
 </main>
@@ -917,11 +917,12 @@ const chip=(a,b,c)=>`<span class="chip"><i>${a}</i><span class="${c||''}">${b}</
 const med=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
 
 // ================= SCANNER (30m trend conditions) =================
-// Long conditions on the latest 30m bar (EMAs on hl2 like the chart clouds; TestLine = (LinReg80 + EMA20 of it)/2):
-//  1  EMA180/200 cloud bullish (EMA180 >= EMA200) AND close above both
-//  2  EMA34/50 cloud bullish (EMA34 >= EMA50) AND EMA12 above both EMA180 and EMA200
-//  3  close above the TestLine
-//  4  close near the EMA34/50 zone: inside it, or within "Near" ATR (14) of its edge
+// BUY state on the latest 30m bar (same rules as the chart labels; EMAs on hl2 like the chart clouds; TestLine = (LinReg80 + EMA20 of it)/2):
+//  1  green candle: close > EMA12 > EMA34, close above the TestLine, TestLine green
+//  2  5/12 cloud bullish and resolved: EMA5 - EMA12 >= Gap x ATR(14)
+//  3  34/50 cloud bullish and resolved: EMA34 - EMA50 >= Gap x ATR(14)
+//  4  optional signal filter (header dropdown): close above 180/200 or TestLine rising; always true when off
+// SELL state = the exact opposite (red candle, clouds bearish and resolved, close below 180/200 / TestLine falling).
 const SC={tfs:[['30mX','30Min',45]],A:[],res:[],raw:null,sel:'',prev:{},busy:false,sort:{k:'',dir:-1}};
 const hasKey=()=>$('px').value.trim()||($('key').value&&$('sec').value);
 const atr=(r,n=14)=>{let a=0;return r.map((x,i)=>{const tr=i?Math.max(x.h-x.l,Math.abs(x.h-r[i-1].c),Math.abs(x.l-r[i-1].c)):x.h-x.l;a=i<n?(a*i+tr)/(i+1):(a*(n-1)+tr)/n;return a})};
@@ -960,24 +961,32 @@ async function loadScan(all,prog){
  await pool(tasks,8,(d,t)=>prog&&prog(d,t));
  setTimeout(()=>idbSet('bc',{key,bc:BC}),50);
  const out={};for(const[nm]of SC.tfs)out[nm]=BC[nm].by;return out}
-const SIG_WARM=210; // bars needed before EMA200 is trusted
-function condSeries(r,near){
- const n=r.length,out=new Array(n).fill(null);if(n<SIG_WARM)return out;
- const hl=r.map(b=>(b.h+b.l)/2),cl=r.map(b=>b.c),e12=ema(hl,12),e34=ema(hl,34),e50=ema(hl,50),e180=ema(hl,180),e200=ema(hl,200),AT=atr(r),lr=linreg(cl,80),el=ema(lr,20);
- for(let i=SIG_WARM-1;i<n;i++){
-  const c=cl[i],a=AT[i],test=(lr[i]+el[i])/2,A=e12[i],B=e34[i],C=e50[i],D=e180[i],E=e200[i];
-  if(![A,B,C,D,E,c,a,test].every(isFinite)||!(a>0))continue;
-  const top=Math.max(D,E),lo=Math.min(B,C),hi=Math.max(B,C),dist=c>hi?(c-hi)/a:c<lo?(lo-c)/a:0,
-   c1=D>=E&&c>top,c2=B>=C&&A>top,c3=c>test,c4=dist<=near;
-  out[i]={px:c,a,e12:A,e34:B,e50:C,e180:D,e200:E,test,dist,c1,c2,c3,c4,met:(c1?1:0)+(c2?1:0)+(c3?1:0)+(c4?1:0)}}
+const SIG_WARM=210; // bars needed before EMA200 is trusted (only used when the 180/200 filter is on)
+const sigW=()=>(($('sflt')||{}).value==='cloud')?SIG_WARM:110;
+function condSeries(r){
+ const n=r.length,W=sigW(),out=new Array(n).fill(null);if(n<=W)return out;
+ const flt=($('sflt')||{}).value||'off',GAP=Math.max(0,+($('sgap')||{}).value||0);
+ const cl=r.map(b=>b.c),hl=r.map(b=>(b.h+b.l)/2),e12=ema(cl,12),e34=ema(cl,34),lr=linreg(cl,80),el=ema(lr,20),e180=ema(hl,180),e200=ema(hl,200),
+  h5=ema(hl,5),h12=ema(hl,12),h34=ema(hl,34),h50=ema(hl,50),AT=atr(r);
+ for(let i=W;i<n;i++){
+  const c=cl[i],a=AT[i],test=(lr[i]+el[i])/2;
+  if(![e12[i],e34[i],lr[i],el[i],c,h5[i],h12[i],h34[i],h50[i],e180[i],e200[i],a].every(isFinite)||!(a>0))continue;
+  const g1=(h5[i]-h12[i])/a,g2=(h34[i]-h50[i])/a,tU=lr[i]>el[i],
+   gc=c>e12[i]&&e12[i]>e34[i]&&c>test&&tU,rc=c<e12[i]&&e12[i]<e34[i]&&c<test&&!tU;
+  let fb=true,fs=true;
+  if(flt==='cloud'){fb=c>Math.max(e180[i],e200[i]);fs=c<Math.min(e180[i],e200[i])}
+  else if(flt==='rise'){const tp=(lr[i-3]+el[i-3])/2;fb=test>tp;fs=test<tp}
+  const b1=g1>=GAP,b2=g2>=GAP,s1=-g1>=GAP,s2=-g2>=GAP;
+  out[i]={px:c,a,test,e5:h5[i],e12:h12[i],e34:h34[i],e50:h50[i],ce12:e12[i],ce34:e34[i],g1,g2,gap:Math.min(g1,g2),c1:gc,c2:b1,c3:b2,c4:fb,
+   met:(gc?1:0)+(b1?1:0)+(b2?1:0)+(fb?1:0),buy:gc&&b1&&b2&&fb,sell:rc&&s1&&s2&&fs}}
  return out}
-function evalCond(r,near){const x=condSeries(r,near)[r.length-1];if(!x)return null;x.t=r[r.length-1].t;return x}
+function evalCond(r){const x=condSeries(r)[r.length-1];if(!x)return null;x.t=r[r.length-1].t;return x}
 const saveSF=()=>store.set('csf2',JSON.stringify([$('sn').value,$('sf').value,$('sb').value]));
 function recompute(notifyNew){
- const near=Math.max(0,+$('sn').value||0),out=[],bad=[],D=SC.raw||{};
- Object.keys(D).forEach(k=>{try{const r=D[k],x=evalCond(r,near);if(!x){bad.push(`${k} (${r?r.length:0} bars)`);return}x.sym=k;x.n=r.length;x.ev=sigList(r);
-  if(notifyNew&&SC.prev[k]===false&&x.met===4)notify(`${k}: all 4 30m conditions met · close ${fm(x.px,2)}`);SC.prev[k]=x.met===4;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
- out.sort((a,b)=>b.met-a.met||a.dist-b.dist);SC.res=out;SC.bad=bad;renderS()}
+ const out=[],bad=[],D=SC.raw||{};
+ Object.keys(D).forEach(k=>{try{const r=D[k],x=evalCond(r);if(!x){bad.push(`${k} (${r?r.length:0} bars)`);return}x.sym=k;x.n=r.length;x.ev=sigList(r);
+  if(notifyNew&&SC.prev[k]===false&&x.buy)notify(`${k}: BUY conditions met on 30m · close ${fm(x.px,2)}`);SC.prev[k]=!!x.buy;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
+ out.sort((a,b)=>b.met-a.met||b.gap-a.gap);SC.res=out;SC.bad=bad;renderS()}
 async function scan(){
  if(SC.busy)return;if(!hasKey()){$('kd').open=true;$('smsg').textContent='Add keys or a proxy URL first.';return}
  SC.busy=true;$('srun').disabled=true;$('smsg').className='';const T0=performance.now();
@@ -986,7 +995,7 @@ async function scan(){
   const Dd=await loadScan(ws,(d,t)=>{$('smsg').textContent=`Loading 30m bars… ${d}/${t}`});
   SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd['30mX'][k]||[]});recompute(true);
   const n4=SC.res.filter(r=>r.met===4).length,N=Math.max(1,+$('sb').value||13),nsg=sigRowsFor('sig',N).length;
-  $('smsg').textContent=`${SC.res.length} scanned · ${n4} meet all 4 · ${nsg} with a BUY/SELL in the last ${N} bars${SC.bad.length?' · skipped: '+SC.bad.join(', '):''} · ${((performance.now()-T0)/1000).toFixed(1)}s`;
+  $('smsg').textContent=`${SC.res.length} scanned · ${n4} in BUY state · ${nsg} with a BUY/SELL in the last ${N} bars${SC.bad.length?' · skipped: '+SC.bad.join(', '):''} · ${((performance.now()-T0)/1000).toFixed(1)}s`;
  }catch(e){$('smsg').textContent=e.message;$('smsg').className='err'}finally{SC.busy=false;$('srun').disabled=false}}
 function sigRowsFor(f,N){
  return SC.res.map(r=>{const w=(r.ev||[]).filter(e=>r.n-1-e.i<N);if(!w.length)return null;const last=w[w.length-1],tail=r.ev[r.ev.length-1];
@@ -998,7 +1007,7 @@ function renderS(){
  if(sigMode){
   let rs=sigRowsFor(f,N);const nb=rs.filter(r=>r.last.side==='buy').length,ns=rs.length-nb;
   rs=SC.sort.k?[...rs].sort((a,b)=>SC.sort.dir*(a[SC.sort.k]-b[SC.sort.k])):rs.sort((a,b)=>a.ago-b.ago||(a.sym<b.sym?-1:1));SC.view=rs;SC.sigView=rs;
-  $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('Last '+N+' bars','BUY '+nb+' · SELL '+ns,nb?'up':'')+chip('Near EMA34/50','≤ '+fm(+$('sn').value||0,1)+' ATR'):'';
+  $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('Last '+N+' bars','BUY '+nb+' · SELL '+ns,nb?'up':'')+chip('Gap ATR','≥ '+fm(+$('sgap').value||0,2))+chip('Cooldown',(+$('scd').value||0)+' bars'):'';
   $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th>Signal</th><th data-sort="ago" title="30m bars since the signal bar (0 = the current bar)">Bars ago</th><th title="Start of the 30m bar that gave the signal (New York time)">Bar (ET)</th><th data-sort="spx">Signal px</th><th data-sort="chg" title="Price now vs the close of the signal bar">Since %</th><th title="IN = the last signal of any age was a BUY, so the long is still open by these rules">Now</th><th>Events in window</th><th></th></tr></thead><tbody>'+
    rs.map(r=>{const buy=r.last.side==='buy',live=Date.now()<Date.parse(r.last.t)+1800e3;
     return`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b></td><td>${p(r.px)}</td><td class="${buy?'up':'dn'}"><b>${buy?'BUY':'SELL'}</b>${live?' ·live':''}</td><td>${r.ago===0?'now':r.ago}</td><td>${etT(r.last.t)}</td><td>${p(r.spx)}</td><td class="${r.chg>=0?'up':'dn'}">${r.chg>=0?'+':''}${fm(r.chg,2)}</td><td class="${r.inPos?'up':''}">${r.inPos?'IN':'out'}</td><td>${r.w.map(e=>(e.side==='buy'?'BUY':'SELL')+' −'+(r.n-1-e.i)).join(' → ')}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
@@ -1007,57 +1016,38 @@ function renderS(){
  const rows=all.filter(r=>f==='all'||(f==='3'?r.met>=3:r.met===4)),
   rs=SC.sort.k?[...rows].sort((a,b)=>SC.sort.dir*(a[SC.sort.k]-b[SC.sort.k])):rows;SC.view=rs;
  const n4=all.filter(r=>r.met===4).length;
- $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('All 4 met',n4,n4?'up':'')+chip('3 of 4',all.filter(r=>r.met===3).length)+chip('Near EMA34/50','≤ '+fm(+$('sn').value||0,1)+' ATR'):'';
- const dot=(ok,t)=>`<td title="${t}" class="${ok?'up':'dn'}" style="text-align:center;font-weight:700">${ok?'✓':'✗'}</td>`;
- $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th title="EMA180/200 bullish and close above the cloud">180/200</th><th title="EMA34/50 bullish and EMA12 above the 180/200 cloud">34/50 + 12</th><th title="Close above the TestLine">Test</th><th title="Close near the EMA34/50 zone">Near</th><th data-sort="met">Met</th><th data-sort="dist" title="Distance from the EMA34/50 zone, in ATR (0 = inside)">Dist ATR</th><th></th></tr></thead><tbody>'+
+ $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('BUY state',n4,n4?'up':'')+chip('3 of 4',all.filter(r=>r.met===3).length)+chip('SELL state',all.filter(r=>r.sell).length,all.some(r=>r.sell)?'dn':'')+chip('Gap ATR','≥ '+fm(+$('sgap').value||0,2)):'';
+ const dot=(ok,t)=>`<td title="${t}" class="${ok?'up':'dn'}" style="text-align:center;font-weight:700">${ok?'✓':'✗'}</td>`,flt=$('sflt').value;
+ $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th title="Green candle: close > EMA12 > EMA34, close above the TestLine, TestLine green">Candle</th><th title="EMA5 above EMA12 by at least Gap x ATR">5/12</th><th title="EMA34 above EMA50 by at least Gap x ATR">34/50</th><th title="Optional signal filter (always passes when off)">Filter</th><th data-sort="met">Met</th><th title="All opposite (SELL) conditions are true now">Sell</th><th data-sort="gap" title="Smaller of the 5/12 and 34/50 gaps, in ATR (negative = bearish)">Gap ATR</th><th></th></tr></thead><tbody>'+
   rs.map(r=>`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b></td><td>${p(r.px)}</td>`+
-   dot(r.c1,`EMA180 ${p(r.e180)} / EMA200 ${p(r.e200)} · close ${p(r.px)}`)+dot(r.c2,`EMA34 ${p(r.e34)} / EMA50 ${p(r.e50)} · EMA12 ${p(r.e12)}`)+dot(r.c3,`TestLine ${p(r.test)} · close ${p(r.px)}`)+dot(r.c4,`${fm(r.dist,2)} ATR from the EMA34/50 zone`)+
-   `<td class="${r.met===4?'up':''}"><b>${r.met}/4</b></td><td>${fm(r.dist,2)}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`).join('')+'</tbody>'
+   dot(r.c1,`close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}`)+dot(r.c2,`EMA5 ${p(r.e5)} / EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR`)+dot(r.c3,`EMA34 ${p(r.e34)} / EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR`)+dot(r.c4,`Signal filter: ${flt}`)+
+   `<td class="${r.met===4?'up':''}"><b>${r.met}/4</b></td><td class="dn"><b>${r.sell?'SELL':''}</b></td><td>${fm(r.gap,2)}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`).join('')+'</tbody>'
   :'<tbody><tr><td class="hint" style="padding:14px">'+(all.length?'No symbols match this filter. Try "3 or more" or "All symbols".':'Press Scan.')+'</td></tr></tbody>';
  detS();renderAlerts()}
 function detS(){const r=SC.res.find(x=>x.sym===SC.sel);if(!r){$('sdet').innerHTML='';return}
  const p=v=>fm(v,v<10?3:2),ok=b=>`<span class="${b?'up':'dn'}">${b?'✓':'✗'}</span>`;
- $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · last 30m bar ${r.t?new Date(r.t).toLocaleString():''}</div><div class="tw"><table class="t"><thead><tr><th>Condition</th><th>Values</th><th></th></tr></thead><tbody>`+
-  `<tr><td>1 · EMA180/200 bullish, close above</td><td>EMA180 ${p(r.e180)} · EMA200 ${p(r.e200)} · close ${p(r.px)}</td><td>${ok(r.c1)}</td></tr>`+
-  `<tr><td>2 · EMA34/50 bullish, EMA12 above 180/200</td><td>EMA34 ${p(r.e34)} · EMA50 ${p(r.e50)} · EMA12 ${p(r.e12)}</td><td>${ok(r.c2)}</td></tr>`+
-  `<tr><td>3 · Close above TestLine</td><td>TestLine ${p(r.test)} · close ${p(r.px)}</td><td>${ok(r.c3)}</td></tr>`+
-  `<tr><td>4 · Close near EMA34/50</td><td>${fm(r.dist,2)} ATR from the zone (ATR ${p(r.a)})</td><td>${ok(r.c4)}</td></tr></tbody></table></div>`}
+ $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · last 30m bar ${r.t?new Date(r.t).toLocaleString():''} · ${r.buy?'<b class="up">BUY state</b>':r.sell?'<b class="dn">SELL state</b>':'no signal state'}</div><div class="tw"><table class="t"><thead><tr><th>BUY condition</th><th>Values</th><th></th></tr></thead><tbody>`+
+  `<tr><td>1 · Green candle, close above TestLine, TestLine green</td><td>close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}</td><td>${ok(r.c1)}</td></tr>`+
+  `<tr><td>2 · 5/12 cloud bullish and resolved</td><td>EMA5 ${p(r.e5)} · EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR</td><td>${ok(r.c2)}</td></tr>`+
+  `<tr><td>3 · 34/50 cloud bullish and resolved</td><td>EMA34 ${p(r.e34)} · EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR (ATR ${p(r.a)})</td><td>${ok(r.c3)}</td></tr>`+
+  `<tr><td>4 · Signal filter (${$('sflt').value})</td><td>${$('sflt').selectedOptions[0].text}</td><td>${ok(r.c4)}</td></tr></tbody></table></div><div class="hint" style="margin:6px 0">SELL is the exact opposite: red candle, close below the TestLine, TestLine red, both clouds bearish with a gap of at least Gap ATR.</div>`}
 function renderAlerts(){$('salr').innerHTML=SC.A.length?SC.A.slice(0,30).map(a=>`${a.t} · ${a.m}`).join('<br>'):'No alerts yet.'}
-// ---- BUY / SELL labels on every chart (same 4 conditions as the scanner, always evaluated on 30m bars) ----
-// BUY  = the bar where all 4 conditions become true (no repeat while they stay true)
-// SELL = after a BUY, the first bar where condition 1, 2 or 3 stops holding (trend broke or close fell below the TestLine).
-//        Condition 4 (near EMA34/50) is an entry condition only, so drifting away from the zone is not a sell.
+// ---- BUY / SELL: one rule set for the chart labels AND the Scanner (always evaluated on 30m bars) ----
+// BUY  = first bar where the BUY state is true (green candle + 5/12 and 34/50 bullish and resolved + optional filter).
+// SELL = first bar where the exact opposite SELL state is true (red candle + both clouds bearish and resolved + optional filter).
+// BUYs and SELLs alternate; a signal is skipped if one already appeared in the last Cooldown candles (it can still fire right after).
+// A state that is already true when the window starts waits for a fresh signal.
 // History: each chart asks for 30m bars back to its first candle (+40 days of EMA warm-up), so every signal in view is drawn;
 // dragging a chart further back extends it automatically. The newest 30m bar can change until it closes; its label shows "·live".
-function sigList(bars){const n=bars.length;if(n<=SIG_WARM+1)return[];
- const s=condSeries(bars,Math.max(0,+$('sn').value||0)),out=[];let inPos=false,blocked=!!(s[SIG_WARM]&&s[SIG_WARM].met===4);
- for(let i=SIG_WARM+1;i<n;i++){const x=s[i];if(!x)continue;
-  if(blocked){if(x.met<4)blocked=false;continue} // already all-true when the window starts: wait for a fresh signal
-  if(!inPos&&x.met===4){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true}
-  else if(inPos&&!(x.c1&&x.c2&&x.c3)){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false}}
- return out}
-// ---- Chart BUY/SELL (the labels drawn on charts; the Scanner keeps its own 4-condition rules above) ----
-// BUY  = first bar where: candle is green (close > EMA12 > EMA34), close > TestLine, TestLine green (LinReg80 > its EMA20).
-//        Optional filter (#sflt): close above the EMA180/200 cloud, or TestLine rising over the last 3 bars.
-// SELL = after a BUY, the first bar where close falls below the TestLine or the candle turns red (close < EMA12 < EMA34).
-function chartSigList(bars){const n=bars.length,flt=($('sflt')||{}).value||'off',W=flt==='cloud'?SIG_WARM:110;if(n<=W+1)return[];
- const cl=bars.map(b=>b.c),hl=bars.map(b=>(b.h+b.l)/2),e12=ema(cl,12),e34=ema(cl,34),lr=linreg(cl,80),el=ema(lr,20),e180=ema(hl,180),e200=ema(hl,200),out=[];
- // 5/12 and 34/50 clouds (same hl2 EMAs the chart clouds use) must be bullish AND well resolved: gap >= GAP x ATR(14)
- const h5=ema(hl,5),h12=ema(hl,12),h34=ema(hl,34),h50=ema(hl,50),AT=atr(bars),GAP=Math.max(0,+($('sgap')||{}).value||0);
- const st=i=>{const c=cl[i],test=(lr[i]+el[i])/2;if(![e12[i],e34[i],lr[i],el[i],c,h5[i],h12[i],h34[i],h50[i],AT[i]].every(isFinite))return null;
-  let buy=c>e12[i]&&e12[i]>e34[i]&&c>test&&lr[i]>el[i]&&(h5[i]-h12[i])>=GAP*AT[i]&&(h34[i]-h50[i])>=GAP*AT[i];
-  if(buy&&flt==='cloud')buy=isFinite(e180[i])&&isFinite(e200[i])&&c>Math.max(e180[i],e200[i]);
-  if(buy&&flt==='rise')buy=i>=3&&test>(lr[i-3]+el[i-3])/2;
-  return{buy,sell:c<test||(c<e12[i]&&e12[i]<e34[i]),px:c}};
- // Cooldown: no new BUY or SELL while one already appeared in the last CD candles (kills BUY/SELL/BUY/SELL whipsaw)
- const CD=Math.max(0,Math.floor(+($('scd')||{}).value||0));let lastI=-1e9;
- let inPos=false,s0=st(W),blocked=!!(s0&&s0.buy);
- for(let i=W+1;i<n;i++){const x=st(i);if(!x)continue;
-  if(blocked){if(!x.buy)blocked=false;continue}
+function chartSigList(bars){const n=bars.length,W=sigW();if(n<=W+1)return[];
+ const s=condSeries(bars),out=[],CD=Math.max(0,Math.floor(+($('scd')||{}).value||0));
+ let lastI=-1e9,last=s[W]?(s[W].buy?'buy':s[W].sell?'sell':''):'';
+ for(let i=W+1;i<n;i++){const x=s[i];if(!x)continue;
   if(i-lastI<=CD)continue;
-  if(!inPos&&x.buy){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true;lastI=i}
-  else if(inPos&&x.sell){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false;lastI=i}}
+  if(x.buy&&last!=='buy'){out.push({t:bars[i].t,side:'buy',px:x.px,i});last='buy';lastI=i}
+  else if(x.sell&&last!=='sell'){out.push({t:bars[i].t,side:'sell',px:x.px,i});last='sell';lastI=i}}
  return out}
+function sigList(bars){return chartSigList(bars)}
 const SGC=new Map(); // symbol -> {bars,from,at,busy,list}
 const sigStart=sec=>Math.min(Date.now()-70*864e5,Math.max(Date.now()-1100*864e5,sec*1e3-40*864e5)); // rows' time is ET-shifted epoch seconds (within hours of real time)
 function sigMarkersFor(rw,stp,sym,txt){
@@ -1073,7 +1063,7 @@ const sigMarkers=()=>sigMarkersFor(rows,step,SYM,true);
 let planL=[];function drawPlan(){try{candle.setMarkers(sigMarkers())}catch(e){}}
 function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){}}
 function sigRedraw(){drawPlan();mcharts.forEach(tileSig)}
-function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw()}
+function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw();if(SC.raw)recompute(false)}
 async function sigEnsure(sym,rowsStartSec,done){
  if(!hasKey()||!sym)return;let g=SGC.get(sym);if(!g){g={bars:[],from:Infinity,at:0,busy:false,list:[]};SGC.set(sym,g)}
  if(g.busy)return;const need=sigStart(rowsStartSec||Date.now()/1e3),cover=g.from<=need;
@@ -1092,8 +1082,8 @@ $('sexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v
  let h,rows;
  if(SC.sigView){h=['Ticker','Price','Signal','Bars_ago','Bar_start_UTC','Signal_px','Since_pct','Now','Events'];
   rows=SC.sigView.map(r=>[r.sym,r.px.toFixed(4),r.last.side.toUpperCase(),r.ago,r.last.t,r.spx.toFixed(4),r.chg.toFixed(2),r.inPos?'IN':'out',r.w.map(e=>e.side.toUpperCase()+' -'+(r.n-1-e.i)).join(' > ')])}
- else{h=['Ticker','Price','C1_180_200','C2_34_50_and_12','C3_Test','C4_Near_34_50','Met','Dist_ATR','EMA12','EMA34','EMA50','EMA180','EMA200','TestLine'];
-  rows=SC.res.map(r=>[r.sym,r.px.toFixed(4),+r.c1,+r.c2,+r.c3,+r.c4,r.met,r.dist.toFixed(2),r.e12.toFixed(4),r.e34.toFixed(4),r.e50.toFixed(4),r.e180.toFixed(4),r.e200.toFixed(4),r.test.toFixed(4)])}
+ else{h=['Ticker','Price','C1_Green_Candle','C2_5_12','C3_34_50','C4_Filter','Met','Sell_State','Gap_ATR','EMA5','EMA12','EMA34','EMA50','TestLine'];
+  rows=SC.res.map(r=>[r.sym,r.px.toFixed(4),+r.c1,+r.c2,+r.c3,+r.c4,r.met,+r.sell,r.gap.toFixed(2),r.e5.toFixed(4),r.e12.toFixed(4),r.e34.toFixed(4),r.e50.toFixed(4),r.test.toFixed(4)])}
  const L=[h,...rows].map(x=>x.map(q).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download=SC.sigView?'cytocine-30m-signals.csv':'cytocine-30m-scan.csv';a.click()};
 try{const v=JSON.parse(store.get('csf2')||'[]');if(v[0]!=null&&isFinite(v[0])&&v[0]!=='')$('sn').value=v[0];if(['4','3','all','sig','buy','sell'].includes(v[1]))$('sf').value=v[1];if(v[2]!=null&&isFinite(v[2])&&v[2]!=='')$('sb').value=v[2]}catch(e){}
