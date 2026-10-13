@@ -152,7 +152,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle is green (TestLine green, close above it) and the 5/12 and 34/50 clouds are bullish and clearly separated (Gap ATR); SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle is green (TestLine green, close above it) and the 5/12 and 34/50 clouds are bullish and clearly separated (Gap ATR); SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -1049,11 +1049,14 @@ function chartSigList(bars){const n=bars.length,flt=($('sflt')||{}).value||'off'
   if(buy&&flt==='cloud')buy=isFinite(e180[i])&&isFinite(e200[i])&&c>Math.max(e180[i],e200[i]);
   if(buy&&flt==='rise')buy=i>=3&&test>(lr[i-3]+el[i-3])/2;
   return{buy,sell:c<test||(c<e12[i]&&e12[i]<e34[i]),px:c}};
+ // Cooldown: no new BUY or SELL while one already appeared in the last CD candles (kills BUY/SELL/BUY/SELL whipsaw)
+ const CD=Math.max(0,Math.floor(+($('scd')||{}).value||0));let lastI=-1e9;
  let inPos=false,s0=st(W),blocked=!!(s0&&s0.buy);
  for(let i=W+1;i<n;i++){const x=st(i);if(!x)continue;
   if(blocked){if(!x.buy)blocked=false;continue}
-  if(!inPos&&x.buy){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true}
-  else if(inPos&&x.sell){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false}}
+  if(i-lastI<=CD)continue;
+  if(!inPos&&x.buy){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true;lastI=i}
+  else if(inPos&&x.sell){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false;lastI=i}}
  return out}
 const SGC=new Map(); // symbol -> {bars,from,at,busy,list}
 const sigStart=sec=>Math.min(Date.now()-70*864e5,Math.max(Date.now()-1100*864e5,sec*1e3-40*864e5)); // rows' time is ET-shifted epoch seconds (within hours of real time)
@@ -1101,6 +1104,8 @@ $('sflt').value=store.get('csflt')||'off';if(!$('sflt').value)$('sflt').value='o
 $('sflt').onchange=()=>{store.set('csflt',$('sflt').value);sigRecalc()};
 {const g=store.get('csgap');if(g!==null&&g!==''&&isFinite(g))$('sgap').value=g}
 $('sgap').onchange=()=>{store.set('csgap',$('sgap').value);sigRecalc()};
+{const g=store.get('cscd');if(g!==null&&g!==''&&isFinite(g))$('scd').value=g}
+$('scd').onchange=()=>{store.set('cscd',$('scd').value);sigRecalc()};
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 
 // ---------- export / import drawings + price alerts (JSON file) ----------
