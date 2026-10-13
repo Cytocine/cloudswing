@@ -101,6 +101,12 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
  #tb hr{width:1px;height:auto;border:0;border-left:1px solid var(--line);margin:0 2px;flex:none}
 }
 #swrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
+#spanel{flex:none;height:46%;min-height:230px;display:flex;flex-direction:column;border-top:2px solid var(--acc);background:#fff}
+#spanel .ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 10px;font-size:13px;border-bottom:1px solid var(--line)}
+#spanel .ph b{font-size:15px}#spanel .ph .sp{flex:1}
+#spanel .ph button{padding:0 10px;min-height:0;height:26px}
+#sch{flex:1;min-height:0;position:relative}
+#stab tr[data-s]{cursor:pointer}#stab tr.on td{background:rgba(41,98,255,.10)}
 .tw{overflow-x:auto}
 table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
 .t th,.t td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
@@ -226,13 +232,15 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <section id="sv" class="hid">
   <div id="sbar">
    <input id="sn" type="hidden" value="0.5">
-   <label>Show <select id="sf"><option value="4">All 4 met now</option><option value="3">3 or more now</option><option value="all">All symbols</option><option value="sig">BUY or SELL in last N bars</option><option value="buy">BUY only in last N bars</option><option value="sell">SELL only in last N bars</option></select></label>
-   <label title="Number of 30m bars to look back for BUY/SELL signals (13 bars = one regular session)">Last N bars <input id="sb" type="number" min="1" max="200" value="13" style="width:56px"></label>
+   <label>Show <select id="sf"><option value="4">All 4 met now</option><option value="3">3 or more now</option><option value="all">All symbols</option><option value="sig" selected>BUY or SELL in last N bars</option><option value="buy">BUY only in last N bars</option><option value="sell">SELL only in last N bars</option></select></label>
+   <label title="Candle size the scanner uses for the BUY/SELL rules">Timeframe <select id="stf"><option value="5Min">5m</option><option value="15Min">15m</option><option value="30Min" selected>30m</option><option value="1Hour">1h</option></select></label>
+   <label title="Number of bars (of the chosen timeframe) to look back for BUY/SELL signals">Last N bars <input id="sb" type="number" min="1" max="200" value="10" style="width:56px"></label>
    <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
   <div id="swrap"><div id="sreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
    <div class="tw"><table class="t" id="stab"></table></div><div id="sdet"></div>
    <div class="hint" style="margin:14px 0 4px"><b>Alerts</b> (a symbol newly in BUY state)</div><div id="salr" class="hint"></div></div>
+  <div id="spanel" class="hid"><div class="ph"><button id="sprev" title="Previous in list (Up arrow)">◀</button><button id="snext" title="Next in list (Down arrow)">▶</button><b id="sphs"></b><span id="sphi"></span><span class="sp"></span><button id="spopen" title="Open in the main Chart tab">↗ Chart</button><button id="spx" title="Close chart">✕</button></div><div id="sch"></div></div>
   <div id="smsg">Press Scan. Needs keys or a proxy URL.</div>
  </section>
 </main>
@@ -923,6 +931,7 @@ const med=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>
 //  3  34/50 cloud bullish and resolved: EMA34 - EMA50 >= Gap x ATR(14)
 //  4  optional signal filter (header dropdown): close above 180/200 or TestLine rising; always true when off
 // SELL state = the exact opposite (red candle, clouds bearish and resolved, close below 180/200 / TestLine falling).
+const STFS={'5Min':['5mX',8,6,'5m',300],'15Min':['15mX',25,10,'15m',900],'30Min':['30mX',45,14,'30m',1800],'1Hour':['1hX',120,20,'1h',3600]}; // tf -> [cache name, days of history, symbols per request, label, seconds]
 const SC={tfs:[['30mX','30Min',45]],A:[],res:[],raw:null,sel:'',prev:{},busy:false,sort:{k:'',dir:-1}};
 const hasKey=()=>$('px').value.trim()||($('key').value&&$('sec').value);
 const atr=(r,n=14)=>{let a=0;return r.map((x,i)=>{const tr=i?Math.max(x.h-x.l,Math.abs(x.h-r[i-1].c),Math.abs(x.l-r[i-1].c)):x.h-x.l;a=i<n?(a*i+tr)/(i+1):(a*(n-1)+tr)/n;return a})};
@@ -950,7 +959,7 @@ async function loadScan(all,prog){
  const key=$('feed').value+'|'+$('px').value.trim()+'|'+$('key').value.trim().slice(-6);
  if(key!==BCkey){for(const k in BC)delete BC[k];BCkey=key;BCload=false}
  if(!BCload){BCload=true;const sv=await idbGet('bc');if(sv&&sv.key===key){Object.assign(BC,sv.bc);['D','1H','30m'].forEach(k=>delete BC[k])}}
- const CHF={'30mX':14},tasks=[],now=Date.now(),H=36e5;
+ const CHF={'5mX':6,'15mX':10,'30mX':14,'1hX':20},tasks=[],now=Date.now(),H=36e5;
  for(const[nm,tf,days]of SC.tfs){const c=BC[nm]=BC[nm]||{at:0,by:{}};
   const stale=now-c.at>48*H,full=all.filter(k=>stale||!c.by[k]||!c.by[k].length),inc=all.filter(k=>!stale&&c.by[k]&&c.by[k].length),cut=now-days*24*H;
   for(let i=0;i<full.length;i+=CHF[nm]){const g=full.slice(i,i+CHF[nm]);tasks.push(async()=>{const by=await pageBars(g,tf,new Date(cut).toISOString());g.forEach(k=>{c.by[k]=by[k]||[]})})}
@@ -959,7 +968,7 @@ async function loadScan(all,prog){
     g.forEach(k=>{const m=new Map(c.by[k].map(b=>[b.t,b]));(by[k]||[]).forEach(b=>m.set(b.t,b));c.by[k]=[...m.values()].filter(b=>Date.parse(b.t)>=cut).sort((a,b)=>a.t<b.t?-1:1)})})}
   if(stale)c.at=now}
  await pool(tasks,8,(d,t)=>prog&&prog(d,t));
- setTimeout(()=>idbSet('bc',{key,bc:BC}),50);
+ setTimeout(()=>{const o={...BC};delete o['5mX'];idbSet('bc',{key,bc:o})},50);
  const out={};for(const[nm]of SC.tfs)out[nm]=BC[nm].by;return out}
 const SIG_WARM=210; // bars needed before EMA200 is trusted (only used when the 180/200 filter is on)
 const sigW=()=>(($('sflt')||{}).value==='cloud')?SIG_WARM:110;
@@ -981,19 +990,20 @@ function condSeries(r){
    met:(gc?1:0)+(b1?1:0)+(b2?1:0)+(fb?1:0),buy:gc&&b1&&b2&&fb,sell:rc&&s1&&s2&&fs}}
  return out}
 function evalCond(r){const x=condSeries(r)[r.length-1];if(!x)return null;x.t=r[r.length-1].t;return x}
-const saveSF=()=>store.set('csf2',JSON.stringify([$('sn').value,$('sf').value,$('sb').value]));
+const stl=()=>(STFS[SC.rawTf||(SC.tfs[0]&&SC.tfs[0][1])]||STFS['30Min'])[3],stS=()=>(STFS[SC.rawTf||(SC.tfs[0]&&SC.tfs[0][1])]||STFS['30Min'])[4];
+const saveSF=()=>store.set('csf3',JSON.stringify([$('sn').value,$('sf').value,$('sb').value]));
 function recompute(notifyNew){
  const out=[],bad=[],D=SC.raw||{};
  Object.keys(D).forEach(k=>{try{const r=D[k],x=evalCond(r);if(!x){bad.push(`${k} (${r?r.length:0} bars)`);return}x.sym=k;x.n=r.length;x.ev=sigList(r);
-  if(notifyNew&&SC.prev[k]===false&&x.buy)notify(`${k}: BUY conditions met on 30m · close ${fm(x.px,2)}`);SC.prev[k]=!!x.buy;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
+  if(notifyNew&&SC.prev[k]===false&&x.buy)notify(`${k}: BUY conditions met on ${stl()} · close ${fm(x.px,2)}`);SC.prev[k]=!!x.buy;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
  out.sort((a,b)=>b.met-a.met||b.gap-a.gap);SC.res=out;SC.bad=bad;renderS()}
 async function scan(){
  if(SC.busy)return;if(!hasKey()){$('kd').open=true;$('smsg').textContent='Add keys or a proxy URL first.';return}
  SC.busy=true;$('srun').disabled=true;$('smsg').className='';const T0=performance.now();
  try{const ws=[...new Set(act())];if(!ws.length)throw new Error('Watchlist is empty.');
   saveSF();
-  const Dd=await loadScan(ws,(d,t)=>{$('smsg').textContent=`Loading 30m bars… ${d}/${t}`});
-  SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd['30mX'][k]||[]});recompute(true);
+  const Dd=await loadScan(ws,(d,t)=>{$('smsg').textContent=`Loading ${STFS[SC.tfs[0][1]][3]} bars… ${d}/${t}`});
+  SC.raw={};ws.forEach(k=>{SC.raw[k]=Dd[SC.tfs[0][0]][k]||[]});SC.rawTf=SC.tfs[0][1];recompute(true);
   const n4=SC.res.filter(r=>r.met===4).length,N=Math.max(1,+$('sb').value||13),nsg=sigRowsFor('sig',N).length;
   $('smsg').textContent=`${SC.res.length} scanned · ${n4} in BUY state · ${nsg} with a BUY/SELL in the last ${N} bars${SC.bad.length?' · skipped: '+SC.bad.join(', '):''} · ${((performance.now()-T0)/1000).toFixed(1)}s`;
  }catch(e){$('smsg').textContent=e.message;$('smsg').className='err'}finally{SC.busy=false;$('srun').disabled=false}}
@@ -1009,7 +1019,7 @@ function renderS(){
   rs=SC.sort.k?[...rs].sort((a,b)=>SC.sort.dir*(a[SC.sort.k]-b[SC.sort.k])):rs.sort((a,b)=>a.ago-b.ago||(a.sym<b.sym?-1:1));SC.view=rs;SC.sigView=rs;
   $('sreg').innerHTML=all.length?chip('Scanned',all.length)+chip('Last '+N+' bars','BUY '+nb+' · SELL '+ns,nb?'up':'')+chip('Gap ATR','≥ '+fm(+$('sgap').value||0,2))+chip('Cooldown',(+$('scd').value||0)+' bars'):'';
   $('stab').innerHTML=rs.length?'<thead><tr><th>Ticker</th><th data-sort="px">Price</th><th>Signal</th><th data-sort="ago" title="30m bars since the signal bar (0 = the current bar)">Bars ago</th><th title="Start of the 30m bar that gave the signal (New York time)">Bar (ET)</th><th data-sort="spx">Signal px</th><th data-sort="chg" title="Price now vs the close of the signal bar">Since %</th><th title="IN = the last signal of any age was a BUY, so the long is still open by these rules">Now</th><th>Events in window</th><th></th></tr></thead><tbody>'+
-   rs.map(r=>{const buy=r.last.side==='buy',live=Date.now()<Date.parse(r.last.t)+1800e3;
+   rs.map(r=>{const buy=r.last.side==='buy',live=Date.now()<Date.parse(r.last.t)+stS()*1e3;
     return`<tr data-s="${r.sym}" class="${r.sym===SC.sel?'on':''}"><td><b>${r.sym}</b></td><td>${p(r.px)}</td><td class="${buy?'up':'dn'}"><b>${buy?'BUY':'SELL'}</b>${live?' ·live':''}</td><td>${r.ago===0?'now':r.ago}</td><td>${etT(r.last.t)}</td><td>${p(r.spx)}</td><td class="${r.chg>=0?'up':'dn'}">${r.chg>=0?'+':''}${fm(r.chg,2)}</td><td class="${r.inPos?'up':''}">${r.inPos?'IN':'out'}</td><td>${r.w.map(e=>(e.side==='buy'?'BUY':'SELL')+' −'+(r.n-1-e.i)).join(' → ')}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
    :'<tbody><tr><td class="hint" style="padding:14px">'+(all.length?`No ${f==='buy'?'BUY':f==='sell'?'SELL':'BUY or SELL'} signals in the last ${N} bars.`:'Press Scan.')+'</td></tr></tbody>';
   detS();renderAlerts();return}
@@ -1023,10 +1033,10 @@ function renderS(){
    dot(r.c1,`close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}`)+dot(r.c2,`EMA5 ${p(r.e5)} / EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR`)+dot(r.c3,`EMA34 ${p(r.e34)} / EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR`)+dot(r.c4,`Signal filter: ${flt}`)+
    `<td class="${r.met===4?'up':''}"><b>${r.met}/4</b></td><td class="dn"><b>${r.sell?'SELL':''}</b></td><td>${fm(r.gap,2)}</td><td><button class="op" data-o="${r.sym}" title="Open in Chart">↗</button></td></tr>`).join('')+'</tbody>'
   :'<tbody><tr><td class="hint" style="padding:14px">'+(all.length?'No symbols match this filter. Try "3 or more" or "All symbols".':'Press Scan.')+'</td></tr></tbody>';
- detS();renderAlerts()}
+ detS();renderAlerts();schDraw()}
 function detS(){const r=SC.res.find(x=>x.sym===SC.sel);if(!r){$('sdet').innerHTML='';return}
  const p=v=>fm(v,v<10?3:2),ok=b=>`<span class="${b?'up':'dn'}">${b?'✓':'✗'}</span>`;
- $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · last 30m bar ${r.t?new Date(r.t).toLocaleString():''} · ${r.buy?'<b class="up">BUY state</b>':r.sell?'<b class="dn">SELL state</b>':'no signal state'}</div><div class="tw"><table class="t"><thead><tr><th>BUY condition</th><th>Values</th><th></th></tr></thead><tbody>`+
+ $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · last ${stl()} bar ${r.t?new Date(r.t).toLocaleString():''} · ${r.buy?'<b class="up">BUY state</b>':r.sell?'<b class="dn">SELL state</b>':'no signal state'}</div><div class="tw"><table class="t"><thead><tr><th>BUY condition</th><th>Values</th><th></th></tr></thead><tbody>`+
   `<tr><td>1 · Green candle, close above TestLine, TestLine green</td><td>close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}</td><td>${ok(r.c1)}</td></tr>`+
   `<tr><td>2 · 5/12 cloud bullish and resolved</td><td>EMA5 ${p(r.e5)} · EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR</td><td>${ok(r.c2)}</td></tr>`+
   `<tr><td>3 · 34/50 cloud bullish and resolved</td><td>EMA34 ${p(r.e34)} · EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR (ATR ${p(r.a)})</td><td>${ok(r.c3)}</td></tr>`+
@@ -1094,6 +1104,39 @@ async function sigEnsure(sym,rowsStartSec,done){
   g.bars=bars;g.from=Math.min(from,need);g.at=Date.now();g.list=chartSigList(bars);done&&done();
   if(SGC.size>12){for(const k of SGC.keys()){if(k!==SYM&&!mcharts.some(t=>t.sym===k)){SGC.delete(k);break}}}}
  catch(e){}finally{g.busy=false}}
+// ---- Scanner: chart that opens below the table when a ticker is clicked ----
+let SCH=null;
+function schInit(){if(SCH)return;
+ const c=LightweightCharts.createChart($('sch'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:11},
+  grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:'#e3e6ec',autoScale:true,scaleMargins:{top:.1,bottom:.1}},
+  timeScale:{borderColor:'#e3e6ec',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0},
+  handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true}});
+ const ln=(color,w)=>c.addLineSeries({color,lineWidth:w,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,autoscaleInfoProvider:()=>null});
+ SCH={c,cs:c.addCandlestickSeries({priceLineVisible:true,lastValueVisible:true,borderVisible:true}),
+  tl:ln('#00e676',3),l5:ln('#4caf50',1),l12:ln('#f44336',1),l34:ln('#2196f3',1),l50:ln('#ffb74d',1),key:''}}
+function schDraw(){
+ const pn=$('spanel'),bars=SC.sel&&SC.raw&&SC.raw[SC.sel],r=SC.res.find(x=>x.sym===SC.sel);
+ if(!SC.sel||!bars||bars.length<2||!r){pn.classList.add('hid');return}
+ pn.classList.remove('hid');schInit();
+ try{const o=compute(bars,99999),rw=o.rows,line=a=>a.map((v,i)=>isFinite(v)?{time:rw[i].time,value:v}:null).filter(Boolean),tf=stl();
+  SCH.cs.setData(rw);SCH.tl.setData(o.tl);
+  SCH.l5.setData(line(o.clouds[1].sv));SCH.l12.setData(line(o.clouds[1].lv));SCH.l34.setData(line(o.clouds[2].sv));SCH.l50.setData(line(o.clouds[2].lv));
+  const now=Date.now(),st=stS()*1e3,mk=(r.ev||[]).filter(e=>rw[e.i]).map(e=>{const buy=e.side==='buy',live=now<Date.parse(e.t)+st;
+   return{time:rw[e.i].time,position:buy?'belowBar':'aboveBar',color:buy?'#00b34a':'#e5252a',shape:buy?'arrowUp':'arrowDown',size:2,text:(buy?'BUY':'SELL')+(live?' ·live':'')}});
+  SCH.cs.setMarkers(mk);
+  const key=SC.sel+'|'+tf;if(SCH.key!==key){SCH.key=key;SCH.c.priceScale('right').applyOptions({autoScale:true});const e=rw.length-1+6;SCH.c.timeScale().setVisibleLogicalRange({from:Math.max(-2,e-Math.max(120,(+$('sb').value||10)*8)),to:e})}
+  const last=r.ev&&r.ev[r.ev.length-1],chg=Q[SC.sel];
+  $('sphs').textContent=SC.sel;
+  $('sphi').innerHTML=`${tf} · ${f(r.px)}${chg?` <span class="${chg.c>=0?'up':'dn'}">${chg.c>=0?'+':''}${chg.c.toFixed(2)}%</span>`:''}`+(last?` · last signal <b class="${last.side==='buy'?'up':'dn'}">${last.side==='buy'?'BUY':'SELL'}</b> ${r.n-1-last.i===0?'now':(r.n-1-last.i)+' bars ago'}`:' · no signal in range')+(r.buy?' · <b class="up">BUY state</b>':r.sell?' · <b class="dn">SELL state</b>':'');
+ }catch(e){}}
+$('spx').onclick=()=>{SC.sel='';renderS()};
+$('sprev').onclick=()=>snav(-1);$('snext').onclick=()=>snav(1);
+$('spopen').onclick=()=>{if(SC.sel)openChart(SC.sel)};
+function setScanTF(tf,rescan){const c=STFS[tf]||STFS['30Min'];tf=STFS[tf]?tf:'30Min';
+ SC.tfs=[[c[0],tf,c[1]]];$('stf').value=tf;SC.prev={};
+ if(rescan&&SC.raw&&hasKey())scan();}
+$('stf').onchange=()=>{store.set('cstf',$('stf').value);setScanTF($('stf').value,true)};
+setScanTF(store.get('cstf')||'30Min',false);
 function snav(d){const k=(SC.view||SC.res).map(r=>r.sym);if(!k.length)return;const i=k.indexOf(SC.sel);SC.sel=k[(i<0?0:i+d+k.length)%k.length];renderS();const el=document.querySelector('#stab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
 $('stab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(SC.sort.k!==k)SC.sort={k,dir:-1};else if(SC.sort.dir<0)SC.sort.dir=1;else SC.sort={k:'',dir:-1};renderS();return}
  const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){SC.sel=r.dataset.s;renderS()}};
@@ -1104,8 +1147,8 @@ $('sexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v
  else{h=['Ticker','Price','C1_Green_Candle','C2_5_12','C3_34_50','C4_Filter','Met','Sell_State','Gap_ATR','EMA5','EMA12','EMA34','EMA50','TestLine'];
   rows=SC.res.map(r=>[r.sym,r.px.toFixed(4),+r.c1,+r.c2,+r.c3,+r.c4,r.met,+r.sell,r.gap.toFixed(2),r.e5.toFixed(4),r.e12.toFixed(4),r.e34.toFixed(4),r.e50.toFixed(4),r.test.toFixed(4)])}
  const L=[h,...rows].map(x=>x.map(q).join(',')).join('\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download=SC.sigView?'cytocine-30m-signals.csv':'cytocine-30m-scan.csv';a.click()};
-try{const v=JSON.parse(store.get('csf2')||'[]');if(v[0]!=null&&isFinite(v[0])&&v[0]!=='')$('sn').value=v[0];if(['4','3','all','sig','buy','sell'].includes(v[1]))$('sf').value=v[1];if(v[2]!=null&&isFinite(v[2])&&v[2]!=='')$('sb').value=v[2]}catch(e){}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download=SC.sigView?`cytocine-${stl()}-signals.csv`:`cytocine-${stl()}-scan.csv`;a.click()};
+try{const v=JSON.parse(store.get('csf3')||'[]');if(v[0]!=null&&isFinite(v[0])&&v[0]!=='')$('sn').value=v[0];if(['4','3','all','sig','buy','sell'].includes(v[1]))$('sf').value=v[1];if(v[2]!=null&&isFinite(v[2])&&v[2]!=='')$('sb').value=v[2]}catch(e){}
 $('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){}};
 $('sf').onchange=()=>{saveSF();renderS()};$('sb').onchange=()=>{saveSF();renderS()};
 $('sn').onchange=()=>{saveSF();if(SC.raw)recompute(false);sigRecalc()};
