@@ -152,7 +152,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when all 4 scanner conditions are met on 30m; SELL when condition 1, 2 or 3 stops holding"><input type="checkbox" id="sig" checked>Signals</label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY when the candle turns green, close is above the TestLine and the TestLine is green; SELL when close drops below the TestLine or the candle turns red"><input type="checkbox" id="sig" checked>Signals</label><select id="sflt" title="Optional extra filter for chart BUY labels"><option value="off">Signal filter: off</option><option value="rise">TestLine rising</option><option value="cloud">Above 180/200</option></select><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -253,7 +253,7 @@ const CL=[
  {s:34,l:50,u:'#2196f3',d:'#ffb74d',a:.30},
  {s:72,l:89,u:'#009688',d:'#f06292',a:.35},
  {s:180,l:200,u:'#05bed5',d:'#e65100',a:.35}];
-const COL={up:'#2e9e4f',dn:'#f23645',mid:'#2962ff'};
+const COL={up:'#2e9e4f',dn:'#f23645',mid:'#2962ff',neu:'#90a4ae'};
 const STEP={'15Min':900,'30Min':1800,'1Hour':3600,'1Day':86400};
 const effD=d=>$('tf').value==='1Day'?Math.max(d,250):d; // daily bars: always load ~1 year so indicators are warmed up (Days box untouched)
 let rows=[],raw=[],clouds=[],lines=[],D=[],hist=[],SYM='',tool='sel',selD=null,hovD=null,cur=null,drag=null,hide=false,magnet=false,step=900,busy=false,tab='C',loadId=0,ORDER=[];
@@ -330,8 +330,9 @@ function compute(rw,days,show){
  const hl2=r.map(x=>(x.high+x.low)/2),cl=r.map(x=>x.close);
  const cls=CL.map(c=>({...c,sv:ema(hl2,c.s),lv:ema(hl2,c.l)}));
  const e12=ema(cl,12),e34=ema(cl,34);
- r.forEach((x,i)=>{const c=cl[i]>e12[i]&&e12[i]>e34[i]?COL.up:cl[i]<e12[i]&&e12[i]<e34[i]?COL.dn:COL.mid;x.color=c;x.wickColor=c;x.borderColor=c});
  const lr=linreg(cl,80),el=ema(lr,20);
+ // green only when the TestLine is also green; a green-structure candle under a red TestLine is neutral gray-blue (chop)
+ r.forEach((x,i)=>{const gs=cl[i]>e12[i]&&e12[i]>e34[i],tb=lr[i]>el[i];const c=gs?(tb?COL.up:COL.neu):cl[i]<e12[i]&&e12[i]<e34[i]?COL.dn:COL.mid;x.color=c;x.wickColor=c;x.borderColor=c});
  const tl=r.map((x,i)=>isNaN(lr[i])||isNaN(el[i])?null:{time:x.time,value:(lr[i]+el[i])/2,color:lr[i]>el[i]?'#00e676':'#ff3b3b'}).filter(Boolean);
  const lv={};
  let pv=0,vv=0,dd='';const vw=r.map(x=>{if(x.d!==dd){dd=x.d;pv=0;vv=0}pv+=(x.high+x.low+x.close)/3*x.v;vv+=x.v;return vv?pv/vv:null});
@@ -1035,6 +1036,23 @@ function sigList(bars){const n=bars.length;if(n<=SIG_WARM+1)return[];
   if(!inPos&&x.met===4){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true}
   else if(inPos&&!(x.c1&&x.c2&&x.c3)){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false}}
  return out}
+// ---- Chart BUY/SELL (the labels drawn on charts; the Scanner keeps its own 4-condition rules above) ----
+// BUY  = first bar where: candle is green (close > EMA12 > EMA34), close > TestLine, TestLine green (LinReg80 > its EMA20).
+//        Optional filter (#sflt): close above the EMA180/200 cloud, or TestLine rising over the last 3 bars.
+// SELL = after a BUY, the first bar where close falls below the TestLine or the candle turns red (close < EMA12 < EMA34).
+function chartSigList(bars){const n=bars.length,flt=($('sflt')||{}).value||'off',W=flt==='cloud'?SIG_WARM:110;if(n<=W+1)return[];
+ const cl=bars.map(b=>b.c),hl=bars.map(b=>(b.h+b.l)/2),e12=ema(cl,12),e34=ema(cl,34),lr=linreg(cl,80),el=ema(lr,20),e180=ema(hl,180),e200=ema(hl,200),out=[];
+ const st=i=>{const c=cl[i],test=(lr[i]+el[i])/2;if(![e12[i],e34[i],lr[i],el[i],c].every(isFinite))return null;
+  let buy=c>e12[i]&&e12[i]>e34[i]&&c>test&&lr[i]>el[i];
+  if(buy&&flt==='cloud')buy=isFinite(e180[i])&&isFinite(e200[i])&&c>Math.max(e180[i],e200[i]);
+  if(buy&&flt==='rise')buy=i>=3&&test>(lr[i-3]+el[i-3])/2;
+  return{buy,sell:c<test||(c<e12[i]&&e12[i]<e34[i]),px:c}};
+ let inPos=false,s0=st(W),blocked=!!(s0&&s0.buy);
+ for(let i=W+1;i<n;i++){const x=st(i);if(!x)continue;
+  if(blocked){if(!x.buy)blocked=false;continue}
+  if(!inPos&&x.buy){out.push({t:bars[i].t,side:'buy',px:x.px,i});inPos=true}
+  else if(inPos&&x.sell){out.push({t:bars[i].t,side:'sell',px:x.px,i});inPos=false}}
+ return out}
 const SGC=new Map(); // symbol -> {bars,from,at,busy,list}
 const sigStart=sec=>Math.min(Date.now()-70*864e5,Math.max(Date.now()-1100*864e5,sec*1e3-40*864e5)); // rows' time is ET-shifted epoch seconds (within hours of real time)
 function sigMarkersFor(rw,stp,sym,txt){
@@ -1050,7 +1068,7 @@ const sigMarkers=()=>sigMarkersFor(rows,step,SYM,true);
 let planL=[];function drawPlan(){try{candle.setMarkers(sigMarkers())}catch(e){}}
 function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){}}
 function sigRedraw(){drawPlan();mcharts.forEach(tileSig)}
-function sigRecalc(){SGC.forEach(g=>{g.list=sigList(g.bars)});sigRedraw()}
+function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw()}
 async function sigEnsure(sym,rowsStartSec,done){
  if(!hasKey()||!sym)return;let g=SGC.get(sym);if(!g){g={bars:[],from:Infinity,at:0,busy:false,list:[]};SGC.set(sym,g)}
  if(g.busy)return;const need=sigStart(rowsStartSec||Date.now()/1e3),cover=g.from<=need;
@@ -1059,7 +1077,7 @@ async function sigEnsure(sym,rowsStartSec,done){
  try{let bars,from=g.from;
   if(cover&&g.bars.length){const nb=await getBars(sym,'30Min',new Date(Date.parse(g.bars[g.bars.length-1].t)-3*36e5).toISOString());bars=mergeBars(g.bars,nb)}
   else{bars=await getBars(sym,'30Min',new Date(need).toISOString());from=need}
-  g.bars=bars;g.from=Math.min(from,need);g.at=Date.now();g.list=sigList(bars);done&&done();
+  g.bars=bars;g.from=Math.min(from,need);g.at=Date.now();g.list=chartSigList(bars);done&&done();
   if(SGC.size>12){for(const k of SGC.keys()){if(k!==SYM&&!mcharts.some(t=>t.sym===k)){SGC.delete(k);break}}}}
  catch(e){}finally{g.busy=false}}
 function snav(d){const k=(SC.view||SC.res).map(r=>r.sym);if(!k.length)return;const i=k.indexOf(SC.sel);SC.sel=k[(i<0?0:i+d+k.length)%k.length];renderS();const el=document.querySelector('#stab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
@@ -1077,6 +1095,8 @@ try{const v=JSON.parse(store.get('csf2')||'[]');if(v[0]!=null&&isFinite(v[0])&&v
 $('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){}};
 $('sf').onchange=()=>{saveSF();renderS()};$('sb').onchange=()=>{saveSF();renderS()};
 $('sn').onchange=()=>{saveSF();if(SC.raw)recompute(false);sigRecalc()};
+$('sflt').value=store.get('csflt')||'off';if(!$('sflt').value)$('sflt').value='off';
+$('sflt').onchange=()=>{store.set('csflt',$('sflt').value);sigRecalc()};
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 
 // ---------- export / import drawings + price alerts (JSON file) ----------
