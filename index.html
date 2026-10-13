@@ -1057,10 +1057,29 @@ function sigMarkersFor(rw,stp,sym,txt){
   let lo=0,hi=rw.length-1,k=-1;while(lo<=hi){const m=lo+hi>>1;if(rw[m].time<=time){k=m;lo=m+1}else hi=m-1}
   if(k<0||time-rw[k].time>Math.max(stp,1800))return;
   const live=now<(t0+1800)*1e3,buy=x.side==='buy';
-  out.push({time:rw[k].time,position:buy?'belowBar':'aboveBar',color:buy?'#00c853':'#ff3b3b',shape:buy?'arrowUp':'arrowDown',text:txt?(buy?'BUY':'SELL')+(live?'·live':''):''})});
+  out.push({time:rw[k].time,position:buy?'belowBar':'aboveBar',color:buy?'#00b34a':'#e5252a',shape:buy?'arrowUp':'arrowDown',size:txt?2:1.5,text:txt?(buy?'BUY':'SELL')+(live?'·live':''):'',buy,live,hi:rw[k].high,lo:rw[k].low})});
  return out.sort((p,q)=>p.time-q.time)}
 const sigMarkers=()=>sigMarkersFor(rows,step,SYM,true);
-let planL=[];function drawPlan(){try{candle.setMarkers(sigMarkers())}catch(e){}}
+// Big BUY/SELL pills drawn on the chart (falls back to larger built-in markers if primitives are unsupported)
+let SIGP=[],sigReq=null,PILL_OK=false;
+const sigPrim={attached(p){sigReq=p.requestUpdate},detached(){sigReq=null},updateAllViews(){},
+ paneViews(){return[{zOrder:()=>'top',renderer:()=>({draw(target){target.useMediaCoordinateSpace(({context:c,mediaSize:ms})=>{
+  const ts=chart.timeScale();c.save();c.font='800 13px -apple-system,Segoe UI,Roboto,sans-serif';c.textBaseline='middle';
+  SIGP.forEach(m=>{const x=ts.timeToCoordinate(m.time),y=candle.priceToCoordinate(m.buy?m.lo:m.hi);if(x==null||y==null)return;
+   const txt=(m.buy?'\u25B2 BUY':'\u25BC SELL')+(m.live?' \u00B7 LIVE':''),w=Math.ceil(c.measureText(txt).width)+18,h=24,gap=9;
+   let L=Math.max(2,Math.min(ms.width-w-2,x-w/2)),T=m.buy?y+gap:y-gap-h;
+   const col=m.buy?'#00b34a':'#e5252a';
+   c.fillStyle=col;c.beginPath();
+   // pointer toward the candle
+   if(m.buy){c.moveTo(x,y+2);c.lineTo(x-6,T);c.lineTo(x+6,T)}else{c.moveTo(x,y-2);c.lineTo(x-6,T+h);c.lineTo(x+6,T+h)}
+   c.closePath();c.fill();
+   c.shadowColor='rgba(0,0,0,.35)';c.shadowBlur=6;c.shadowOffsetY=2;
+   c.beginPath();const r=6;c.moveTo(L+r,T);c.arcTo(L+w,T,L+w,T+h,r);c.arcTo(L+w,T+h,L,T+h,r);c.arcTo(L,T+h,L,T,r);c.arcTo(L,T,L+w,T,r);c.closePath();c.fill();
+   c.shadowColor='transparent';c.lineWidth=2;c.strokeStyle='#fff';c.stroke();
+   c.fillStyle='#fff';c.textAlign='center';c.fillText(txt,L+w/2,T+h/2+1)});
+  c.restore()})}})}]}};
+try{candle.attachPrimitive(sigPrim);PILL_OK=true}catch(e){PILL_OK=false}
+let planL=[];function drawPlan(){try{const m=sigMarkers();if(PILL_OK){SIGP=m;candle.setMarkers([]);sigReq&&sigReq()}else candle.setMarkers(m)}catch(e){}}
 function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){}}
 function sigRedraw(){drawPlan();mcharts.forEach(tileSig)}
 function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw();if(SC.raw)recompute(false)}
