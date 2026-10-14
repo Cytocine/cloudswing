@@ -155,9 +155,9 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 #opanel{flex:none;height:46%;min-height:230px;display:flex;flex-direction:column;border-top:2px solid var(--acc);background:#fff}
 #opanel .ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 10px;font-size:13px;border-bottom:1px solid var(--line)}
 #opanel .ph b{font-size:15px}#opanel .ph .sp{flex:1}#opanel .ph button{padding:0 10px;min-height:0;height:26px}
-#och{flex:1;min-height:0;position:relative}
+#och{flex:1;min-height:0;position:relative}#ocv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}#ochc{position:absolute;inset:0;z-index:1}
 #omsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
-#otab tr[data-s]{cursor:pointer}#otab tr.on td{background:rgba(41,98,255,.10)}
+#otab tr[data-s]{cursor:pointer}#otab tr.hot td{background:#fff1c9}#otab tr.watch td{background:#fffaea}#otab tr.hot td:first-child{box-shadow:inset 4px 0 #f5a623}#otab tr.watch td:first-child{box-shadow:inset 4px 0 #f7d58a}#otab tr.on td{background:rgba(41,98,255,.10)}
 @media(max-width:720px){#obar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#obar>*{flex:none}#obar input[type=number]{width:60px!important}}
 </style></head>
 <body data-tab="C">
@@ -250,10 +250,10 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label title="Only strikes within this % of the stock price (0 = all strikes)">Strike ±% <input id="oband" type="number" min="0" max="100" value="20" style="width:52px"></label>
    <label title="15-minute option chart: fast EMA above slow EMA on the latest bar">15m EMA <input id="oef" type="number" min="2" max="100" value="10" style="width:46px"> &gt; <input id="oes" type="number" min="3" max="200" value="20" style="width:46px"></label>
    <label title="Indicative = free options feed, OPRA = paid real-time">Data <select id="ofeed"><option value="indicative">Indicative (free)</option><option value="opra">OPRA (paid)</option></select></label>
-   <button class="p" id="orun">Scan</button><button id="oexp">Export CSV</button><label><input type="checkbox" id="oauto">Auto 60s</label>
+   <label title="Show at most this many contracts per stock (best ranked first)">Per stock <input id="opn" type="number" min="1" max="10" value="2" style="width:46px"></label><button class="p" id="orun">Scan</button><button id="oexp">Export CSV</button><label><input type="checkbox" id="oauto">Auto 60s</label>
   </div>
   <div id="owrap"><div id="oreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div><div class="tw"><table class="t" id="otab"></table></div></div>
-  <div id="opanel" class="hid"><div class="ph"><button id="oprev" title="Previous (Up arrow)">◀</button><button id="onext" title="Next (Down arrow)">▶</button><b id="ophs"></b><span id="ophi"></span><span class="sp"></span><button id="oopen" title="Open the underlying in the Chart tab">↗ Chart</button><button id="opx" title="Close chart">✕</button></div><div id="och"></div></div>
+  <div id="opanel" class="hid"><div class="ph"><button id="oprev" title="Previous (Up arrow)">◀</button><button id="onext" title="Next (Down arrow)">▶</button><b id="ophs"></b><span id="ophi"></span><span class="sp"></span><button id="oopen" title="Open the underlying in the Chart tab">↗ Chart</button><button id="opx" title="Close chart">✕</button></div><div id="och"><canvas id="ocv"></canvas><div id="ochc"></div></div></div>
   <div id="omsg">Press Scan. Tracks the watchlist (or ★ Focus list). Needs keys or a proxy URL.</div>
  </section>
  <section id="sv" class="hid">
@@ -520,6 +520,7 @@ function draw(){
    D.forEach(d=>{const g=geo(d);if(g.some(q=>q.x==null||q.y==null))return;render(d,g,pw,d===selD?2:d===hovD?1:0)});
    dx.restore()}}
  if(tab==='M')mpaint();
+ if(tab==='O')opaint();
  requestAnimationFrame(draw)}
 requestAnimationFrame(draw);
 
@@ -1337,16 +1338,33 @@ $('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile')
 // For every watchlist name (or the ★ Focus list): pull the option chain snapshot, keep contracts with DTE > N and volume > V,
 // then fetch each survivor's own 15-minute bars and keep it only if EMA(fast) > EMA(slow) on the latest 15m bar of the OPTION chart.
 // Snapshot volume = the contract's volume today; "Last 15m bar" mode checks the newest 15m bar's volume instead.
-const OP={res:[],bars:{},sel:'',sort:{k:'vol',dir:-1},busy:false,prev:new Set(),flt:'',view:[],o:null,st:null};
+const OP={res:[],bars:{},sel:'',sort:{k:'score',dir:-1},mk:null,busy:false,prev:new Set(),flt:'',view:[],o:null,st:null};
 const OCC=/^(.+?)(\d{6})([CP])(\d{8})$/;
 function occParse(s){const m=OCC.exec(s);if(!m)return null;return{root:m[1],exp:'20'+m[2].slice(0,2)+'-'+m[2].slice(2,4)+'-'+m[2].slice(4,6),type:m[3]==='C'?'call':'put',strike:+m[4]/1000}}
 const addD=(d,n)=>new Date(Date.parse(d)+n*864e5).toISOString().slice(0,10);
 const dteOf=exp=>Math.round((Date.parse(exp)-Date.parse(et(Date.now()/1e3).d))/864e5);
 const oLabel=r=>`${r.und} ${r.exp.slice(5,7)}/${r.exp.slice(8)} ${r.strike}${r.type==='call'?'C':'P'}`;
+// Sector strength: each stock maps to a sector / theme ETF; its move today vs SPY is the "sector strength". Add your own tickers to SECM.
+const SECM={XLK:'AAPL MSFT ACN DELL SMCI CRWD PLTR MNDY IONQ SOUN',SMH:'AMD NVDA MRVL',XLC:'GOOG GOOGL META NFLX T ASTS',XLY:'AMZN BABA LULU UBER LYFT KSS LOW LVS JMIA MBLY',XLI:'BA UAL LUV',XLF:'JPM HOOD',XLV:'JNJ LLY MRK HIMS CLOV MBOT ACB',XLP:'KHC KO MO',XLE:'XOM KMI',XLB:'FCX',TAN:'ENPH FSLR BE',URA:'CCJ',IBIT:'MARA RIOT CLSK IREN'};
+const SECN={XLK:'Tech',SMH:'Semis',XLC:'Comm',XLY:'Cons Disc',XLI:'Industrials',XLF:'Financials',XLV:'Health',XLP:'Staples',XLE:'Energy',XLB:'Materials',TAN:'Solar',URA:'Uranium',IBIT:'Crypto'};
+const SEC={};for(const e in SECM)SECM[e].split(' ').forEach(t=>SEC[t]=e);
+async function omarket(ws){const etfs=[...new Set(['SPY',...ws.map(k=>SEC[k]).filter(Boolean)])];
+ try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${etfs.join(',')}&feed=${$('feed').value}`),sn=j.snapshots||j,sec={};
+  etfs.forEach(k=>{const x=sn[k];if(x&&x.latestTrade&&x.prevDailyBar)sec[k]=(x.latestTrade.p/x.prevDailyBar.c-1)*100});
+  OP.mk={spy:sec.SPY!=null?sec.SPY:null,sec}}catch(e){OP.mk=null}}
+// Attention score (max 7), direction-aware: calls want strength, puts want weakness.
+//  +2 stock beats SPY today by > 0.5% (calls) / lags it by > 0.5% (puts) · +2 its sector ETF beats SPY by > 0.3% (calls) / lags (puts)
+//  +1 fresh EMA cross (<= 3 bars) · +1 spread <= 10% · +1 volume >= 3x the minimum.   HOT = both strengths aligned and score >= 5; WATCH = one aligned and score >= 3.
+const ATN=['Stock vs SPY aligned (> 0.5%)','Sector vs SPY aligned (> 0.3%)','Fresh EMA cross (<= 3 bars)','Spread <= 10%','Volume >= 3x minimum'];
+function attn(r,o){const mk=OP.mk||{},q=Q[r.und],chg=q?q.c:null,sg=r.type==='call'?1:-1,se=SEC[r.und],sp=mk.spy;
+ const rs=chg!=null&&sp!=null?chg-sp:null,secPct=se&&mk.sec&&mk.sec[se]!=null&&sp!=null?mk.sec[se]-sp:null;
+ const f=[rs!=null&&rs*sg>0.5,secPct!=null&&secPct*sg>0.3,r.ago<=3,r.spr!=null&&r.spr<=10,r.vol>=3*o.minV].map(Boolean);
+ const score=(f[0]?2:0)+(f[1]?2:0)+(f[2]?1:0)+(f[3]?1:0)+(f[4]?1:0),tier=f[0]&&f[1]&&score>=5?'hot':(f[0]||f[1])&&score>=3?'watch':'';
+ return{rs,sec:se?SECN[se]:null,secPct,chg,score,tier,f}}
 function oOpts(){const n=(id,d,lo,hi)=>{const v=+$(id).value;return isFinite(v)&&$(id).value!==''?Math.min(hi,Math.max(lo,v)):d};
  const fast=Math.round(n('oef',10,2,100)),slow=Math.round(n('oes',20,3,200));
- return{type:$('otype').value,minD:Math.round(n('omind',7,0,365)),maxD:Math.round(n('omaxd',45,1,730)),minV:n('ominv',1000,0,1e9),vb:$('ovb').value,band:n('oband',20,0,100),fast:Math.min(fast,slow-1),slow,feed:$('ofeed').value}}
-const OIDS=['otype','omind','omaxd','ominv','ovb','oband','oef','oes','ofeed'];
+ return{type:$('otype').value,minD:Math.round(n('omind',7,0,365)),maxD:Math.round(n('omaxd',45,1,730)),minV:n('ominv',1000,0,1e9),vb:$('ovb').value,band:n('oband',20,0,100),fast:Math.min(fast,slow-1),slow,feed:$('ofeed').value,per:Math.round(n('opn',2,1,10))}}
+const OIDS=['otype','omind','omaxd','ominv','ovb','oband','oef','oes','ofeed','opn'];
 const saveO=()=>store.set('copt',JSON.stringify(OIDS.map(i=>$(i).value)));
 try{const v=JSON.parse(store.get('copt')||'[]');OIDS.forEach((i,k)=>{if(v[k]!=null&&v[k]!==''){const old=$(i).value;$(i).value=v[k];if($(i).value===''&&$(i).tagName==='SELECT')$(i).value=old}})}catch(e){}
 OIDS.forEach(i=>$(i).onchange=saveO);
@@ -1365,7 +1383,7 @@ async function oscan(){
  if(OP.busy)return;if(!hasKey()){$('kd').open=true;$('omsg').textContent='Add keys or a proxy URL first.';return}
  OP.busy=true;$('orun').disabled=true;$('omsg').className='';const T0=performance.now(),errs=[];
  try{const o=oOpts();saveO();OP.o=o;const ws=[...new Set(act())];if(!ws.length)throw new Error('Watchlist is empty.');
-  if(o.band>0&&!Object.keys(Q).length){$('omsg').textContent='Getting stock prices…';await quotes()}
+  $('omsg').textContent='Getting stock prices & sector strength…';await quotes();await omarket(ws);
   const cand=[];let nsn=0;
   await pool(ws.map(k=>async()=>{try{const px=Q[k]&&Q[k].p,sn=await optSnaps(k,px,o);
     for(const sy in sn){nsn++;const x=sn[sy],pr=occParse(sy);if(!pr)continue;const v=x.dailyBar&&x.dailyBar.v;if(!(v>o.minV))continue;
@@ -1380,41 +1398,59 @@ async function oscan(){
    if(!(ef[n]>es[n]))return;if(o.vb==='bar'&&!(b[n].v>o.minV))return;
    let k=n;while(k>=0&&ef[k]>es[k])k--;
    const sn=c.snap,lq=sn.latestQuote||{},lt=sn.latestTrade||{},bp=lq.bp,ap=lq.ap,mid=bp>0&&ap>0?(bp+ap)/2:null;
-   res.push({...c,n,last:lt.p!=null?lt.p:b[n].c,bp,ap,spr:mid?(ap-bp)/mid*100:null,delta:sn.greeks?sn.greeks.delta:null,iv:sn.impliedVolatility,
-    ef:ef[n],es:es[n],gap:(ef[n]/es[n]-1)*100,ago:n-k-1,lastT:b[n].t,bv:b[n].v})});
+   const r={...c,n,last:lt.p!=null?lt.p:b[n].c,bp,ap,spr:mid?(ap-bp)/mid*100:null,delta:sn.greeks?sn.greeks.delta:null,iv:sn.impliedVolatility,
+    ef:ef[n],es:es[n],gap:(ef[n]/es[n]-1)*100,ago:n-k-1,lastT:b[n].t,bv:b[n].v};Object.assign(r,attn(r,o));res.push(r)});
+  const emaN=res.length,byU={},keep=[];res.forEach(r=>(byU[r.und]=byU[r.und]||[]).push(r));
+  // only the best N contracts per stock; the 2nd pick must differ in type or expiry when possible (not two neighbouring strikes)
+  for(const u in byU){const L=byU[u].sort((a,b)=>b.score-a.score||b.vol-a.vol),pick=[];
+   for(const r of L){if(pick.length>=o.per)break;if(!pick.some(q=>q.type===r.type&&q.exp===r.exp))pick.push(r)}
+   for(const r of L){if(pick.length>=o.per)break;if(!pick.includes(r))pick.push(r)}
+   keep.push(...pick)}
+  res.length=0;res.push(...keep);
   const first=OP.prev.size===0&&!OP.st;res.forEach(r=>{r.isNew=!first&&!OP.prev.has(r.sym)});
-  OP.prev=new Set(res.map(r=>r.sym));OP.res=res;OP.st={und:ws.length,snaps:nsn,vol:cand.length,capped:cand.length>top.length,ema:res.length};
+  OP.prev=new Set(res.map(r=>r.sym));OP.res=res;OP.st={und:ws.length,snaps:nsn,vol:cand.length,capped:cand.length>top.length,ema:emaN,stocks:Object.keys(byU).length};
   if(OP.sel&&!res.some(r=>r.sym===OP.sel))OP.sel='';
   renderO();
-  $('omsg').textContent=`${ws.length} underlyings · ${nsn} contracts read · ${cand.length} pass volume${OP.st.capped?' (top 400 checked)':''} · ${res.length} pass EMA ${o.fast}>${o.slow} · ${((performance.now()-T0)/1000).toFixed(1)}s`+(errs.length?' · issues: '+errs.slice(0,3).join('; '):'');
+  $('omsg').textContent=`${ws.length} underlyings · ${nsn} contracts read · ${cand.length} pass volume${OP.st.capped?' (top 400 checked)':''} · ${OP.st.ema} pass EMA ${o.fast}>${o.slow} · showing ${res.length} (best ${o.per}/stock, ${OP.st.stocks} stocks) · ${((performance.now()-T0)/1000).toFixed(1)}s`+(errs.length?' · issues: '+errs.slice(0,3).join('; '):'');
   if(errs.length)$('omsg').className='err'
  }catch(e){$('omsg').textContent=e.message;$('omsg').className='err'}finally{OP.busy=false;$('orun').disabled=false}}
 function renderO(){
  const o=OP.o||oOpts(),all=OP.res,rs0=OP.flt?all.filter(r=>r.und===OP.flt):all,sk=OP.sort.k;
- const rs=sk?[...rs0].sort((a,b)=>OP.sort.dir*((a[sk]==null?-1e9:a[sk])-(b[sk]==null?-1e9:b[sk]))):rs0;OP.view=rs;
- const st=OP.st;
- $('oreg').innerHTML=st?chip('Underlyings',st.und)+chip('Contracts read',st.snaps)+chip('Volume > '+o.minV,st.vol)+chip(`EMA ${o.fast}>${o.slow} (15m)`,all.length,all.length?'up':'')+chip('DTE','> '+o.minD)+(OP.flt?`<span class="chip" style="cursor:pointer" data-clr="1"><i>Filter</i>${OP.flt} ✕</span>`:''):'';
- const p=v=>v==null?'–':fm(v,v<10?2:2);
- $('otab').innerHTML=rs.length?`<thead><tr><th data-sort="und">Underlying</th><th>Contract</th><th data-sort="last">Last</th><th>Bid / Ask</th><th data-sort="spr" title="Bid-ask spread as % of mid. Wide spreads are hard to trade">Spr %</th><th data-sort="vol" title="Contract volume today">Vol</th><th data-sort="bv" title="Volume of the newest 15m bar">15m Vol</th><th data-sort="delta">Δ</th><th data-sort="iv" title="Implied volatility">IV %</th><th data-sort="dte">DTE</th><th data-sort="ef">EMA ${o.fast}</th><th data-sort="es">EMA ${o.slow}</th><th data-sort="gap" title="Fast EMA above slow EMA, in %">Gap %</th><th data-sort="ago" title="15m bars since fast EMA crossed above slow (0 = latest bar)">Cross ago</th><th>Last bar (ET)</th><th></th></tr></thead><tbody>`+
-  rs.map(r=>`<tr data-s="${r.sym}" class="${r.sym===OP.sel?'on':''}"><td><b>${r.und}</b>${r.isNew?' <span class="up" title="New since the last scan">●new</span>':''}</td><td>${oLabel(r)}</td><td>${p(r.last)}</td><td>${p(r.bp)} / ${p(r.ap)}</td><td class="${r.spr!=null&&r.spr>15?'dn':''}">${r.spr==null?'–':fm(r.spr,1)}</td><td><b>${r.vol.toLocaleString()}</b></td><td>${r.bv.toLocaleString()}</td><td>${r.delta==null?'–':fm(r.delta,2)}</td><td>${r.iv==null?'–':fm(r.iv*100,0)}</td><td>${r.dte}</td><td>${p(r.ef)}</td><td>${p(r.es)}</td><td class="up">+${fm(r.gap,1)}</td><td>${r.ago===0?'now':r.ago}</td><td>${new Date(r.lastT).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td><button class="op" data-o="${r.und}" title="Open the underlying in Chart">↗</button></td></tr>`).join('')+'</tbody>'
+ const cmp=(a,b)=>{const x=a[sk],y=b[sk];if(typeof x==='string'||typeof y==='string')return String(x||'').localeCompare(String(y||''));return(x==null?-1e9:x)-(y==null?-1e9:y)};
+ const rs=sk?[...rs0].sort((a,b)=>OP.sort.dir*cmp(a,b)||b.vol-a.vol):rs0;OP.view=rs;
+ const st=OP.st,mk=OP.mk,sp=mk&&mk.spy!=null?mk.spy:null,nh=all.filter(r=>r.tier==='hot').length;
+ $('oreg').innerHTML=st?chip('Underlyings',st.und)+chip('Contracts read',st.snaps)+chip('Volume > '+o.minV,st.vol)+chip(`EMA ${o.fast}>${o.slow} (15m)`,st.ema,st.ema?'up':'')+chip('Shown',all.length+' (best '+o.per+'/stock)')+chip('🔥 HOT',nh,nh?'up':'')+(sp!=null?chip('SPY today',(sp>=0?'+':'')+fm(sp,2)+'%',sp>=0?'up':'dn'):'')+(OP.flt?`<span class="chip" style="cursor:pointer" data-clr="1"><i>Filter</i>${OP.flt} ✕</span>`:''):'';
+ const p=v=>v==null?'–':fm(v,2),sgn=v=>(v>=0?'+':'')+fm(v,1);
+ $('otab').innerHTML=rs.length?`<thead><tr><th data-sort="score" title="Attention score out of 7: stock relative strength, sector strength, fresh cross, tight spread, volume. Hover a score for details.">Focus</th><th data-sort="und">Stock</th><th>Contract</th><th data-sort="last">Last</th><th>Bid / Ask</th><th data-sort="spr" title="Bid-ask spread as % of mid">Spr %</th><th data-sort="vol" title="Contract volume today">Vol</th><th data-sort="bv" title="Volume of the newest 15m bar">15m Vol</th><th data-sort="delta">Δ</th><th data-sort="iv">IV %</th><th data-sort="dte">DTE</th><th data-sort="gap" title="Fast EMA above slow EMA, in %">Gap %</th><th data-sort="ago" title="15m bars since the fast EMA crossed above the slow (0 = latest bar)">Cross ago</th><th data-sort="rs" title="Stock % change today minus SPY. Green = in the direction of the trade (calls: stronger than SPY, puts: weaker)">RS vs SPY</th><th data-sort="secPct" title="Sector / theme ETF % change today minus SPY">Sector</th><th data-sort="score">Score</th><th>Last bar (ET)</th><th></th></tr></thead><tbody>`+
+  rs.map(r=>{const sg=r.type==='call'?1:-1,tip=ATN.map((n,i)=>(r.f[i]?'✓ ':'✗ ')+n).join(' · ')+(r.type==='put'?' (puts: weakness counts)':'');
+   return`<tr data-s="${r.sym}" class="${r.tier}${r.sym===OP.sel?' on':''}"><td>${r.tier==='hot'?'<b style="color:#d98200">🔥 HOT</b>':r.tier==='watch'?'<b style="color:#8a6d00">◉ WATCH</b>':''}</td><td><b>${r.und}</b>${r.isNew?' <span class="up" title="New since the last scan">●new</span>':''}</td><td>${oLabel(r)}</td><td>${p(r.last)}</td><td>${p(r.bp)} / ${p(r.ap)}</td><td class="${r.spr!=null&&r.spr>15?'dn':''}">${r.spr==null?'–':fm(r.spr,1)}</td><td><b>${r.vol.toLocaleString()}</b></td><td>${r.bv.toLocaleString()}</td><td>${r.delta==null?'–':fm(r.delta,2)}</td><td>${r.iv==null?'–':fm(r.iv*100,0)}</td><td>${r.dte}</td><td class="up">+${fm(r.gap,1)}</td><td>${r.ago===0?'now':r.ago}</td><td class="${r.rs==null?'':r.rs*sg>0?'up':'dn'}">${r.rs==null?'–':sgn(r.rs)}</td><td class="${r.secPct==null?'':r.secPct*sg>0?'up':'dn'}" title="${r.sec?r.sec+' ETF vs SPY':'No sector mapped for this ticker'}">${r.sec?r.sec+(r.secPct!=null?' '+sgn(r.secPct):''):'–'}</td><td title="${tip}"><b>${r.score}/7</b></td><td>${new Date(r.lastT).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td><button class="op" data-o="${r.und}" title="Open the stock in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
   :'<tbody><tr><td class="hint" style="padding:14px">'+(st?'No contracts pass all filters. Try a lower volume, a wider strike range, or a higher Max DTE.':'Press Scan.')+'</td></tr></tbody>';
  odraw()}
 let OCH=null;
 function ochInit(){if(OCH)return;
- const c=LightweightCharts.createChart($('och'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:11},
+ const c=LightweightCharts.createChart($('ochc'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:11},
   grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:'#e3e6ec',autoScale:true,scaleMargins:{top:.1,bottom:.1}},
   timeScale:{borderColor:'#e3e6ec',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0}});
- const ln=(color,w)=>c.addLineSeries({color,lineWidth:w,priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
- OCH={c,cs:c.addCandlestickSeries({priceLineVisible:true,lastValueVisible:true,borderVisible:true}),f:ln('#2962ff',2),s:ln('#ff9800',2),key:''}}
+ const ln=(color,w)=>c.addLineSeries({color,lineWidth:w,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+ OCH={c,cs:c.addCandlestickSeries({priceLineVisible:true,lastValueVisible:true,borderVisible:true}),f:ln('#2e9e4f',1),s:ln('#f23645',1),key:'',rows:[],clouds:[]}}
 function odraw(){const pn=$('opanel'),r=OP.res.find(x=>x.sym===OP.sel),b=r&&OP.bars[r.sym];
  if(!r||!b||b.length<2){pn.classList.add('hid');return}
  pn.classList.remove('hid');ochInit();
  const o=OP.o||oOpts(),tm=b.map(x=>{const t=Date.parse(x.t)/1e3;return t+et(t).sh}),cl=b.map(x=>x.c),ef=ema(cl,o.fast),es=ema(cl,o.slow);
+ OCH.rows=b.map((x,i)=>({time:tm[i],d:et(Date.parse(x.t)/1e3).d}));
+ OCH.clouds=[{sv:ef,lv:es,u:'#2e9e4f',d:'#f23645',a:.30}]; // green cloud while fast > slow, red while bearish; each trading day gets an alternating background
  OCH.cs.setData(b.map((x,i)=>({time:tm[i],open:x.o,high:x.h,low:x.l,close:x.c})));
  OCH.f.setData(tm.map((t,i)=>({time:t,value:ef[i]})));OCH.s.setData(tm.map((t,i)=>({time:t,value:es[i]})));
  if(OCH.key!==r.sym){OCH.key=r.sym;OCH.c.priceScale('right').applyOptions({autoScale:true});OCH.c.timeScale().fitContent()}
+ const sg=r.type==='call'?1:-1,cc=v=>v==null?'':v*sg>0?'up':'dn';
  $('ophs').textContent=oLabel(r);
- $('ophi').innerHTML=`15m · <span style="color:#2962ff">EMA ${o.fast}</span> / <span style="color:#ff9800">EMA ${o.slow}</span> · last ${fm(r.last,2)} · vol ${r.vol.toLocaleString()} · ${r.dte} DTE`+(r.delta!=null?` · Δ ${fm(r.delta,2)}`:'')}
+ $('ophi').innerHTML=`15m · EMA ${o.fast}/${o.slow} cloud (<span class="up">bull</span> / <span class="dn">bear</span>) · last ${fm(r.last,2)} · vol ${r.vol.toLocaleString()} · ${r.dte} DTE`+(r.delta!=null?` · Δ ${fm(r.delta,2)}`:'')+
+  (r.rs!=null?` · stock <span class="${cc(r.rs)}">${r.rs>=0?'+':''}${fm(r.rs,1)}% vs SPY</span>`:'')+(r.sec&&r.secPct!=null?` · ${r.sec} <span class="${cc(r.secPct)}">${r.secPct>=0?'+':''}${fm(r.secPct,1)}%</span>`:'')+(r.tier==='hot'?' · <b style="color:#d98200">🔥 HOT</b>':r.tier==='watch'?' · <b style="color:#8a6d00">◉ WATCH</b>':'')}
+function opaint(){const pn=$('opanel');if(!OCH||!OCH.rows.length||pn.classList.contains('hid'))return;
+ const bx=$('och'),w=bx.clientWidth,h=bx.clientHeight,dpr=devicePixelRatio||1,cv=$('ocv');
+ if(cv.width!==w*dpr||cv.height!==h*dpr){cv.width=w*dpr;cv.height=h*dpr}
+ const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
+ back(c,OCH.c.timeScale(),OCH.cs,OCH.rows,OCH.clouds,w,h,w-OCH.c.priceScale('right').width(),[],false)}
 function onav(d){const k=OP.view.map(r=>r.sym);if(!k.length)return;const i=k.indexOf(OP.sel);OP.sel=k[(i<0?0:i+d+k.length)%k.length];renderO();const el=document.querySelector('#otab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
 $('otab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(OP.sort.k!==k)OP.sort={k,dir:-1};else if(OP.sort.dir<0)OP.sort.dir=1;else OP.sort={k:'',dir:-1};renderO();return}
  const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){OP.sel=r.dataset.s;renderO()}};
@@ -1423,8 +1459,8 @@ $('opx').onclick=()=>{OP.sel='';renderO()};$('oprev').onclick=()=>onav(-1);$('on
 $('oopen').onclick=()=>{const r=OP.res.find(x=>x.sym===OP.sel);if(r)openChart(r.und)};
 $('orun').onclick=oscan;
 $('oexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
- const h=['Underlying','Contract','OCC_symbol','Type','Strike','Expiry','DTE','Last','Bid','Ask','Spread_pct','Volume_today','Volume_last_15m','Delta','IV','EMA_fast','EMA_slow','Gap_pct','Cross_bars_ago','Last_bar_UTC'];
- const L=[h,...OP.view.map(r=>[r.und,oLabel(r),r.sym,r.type,r.strike,r.exp,r.dte,r.last,r.bp,r.ap,r.spr==null?'':r.spr.toFixed(2),r.vol,r.bv,r.delta,r.iv,r.ef.toFixed(4),r.es.toFixed(4),r.gap.toFixed(2),r.ago,r.lastT])].map(x=>x.map(q).join(',')).join('\n');
+ const h=['Underlying','Contract','OCC_symbol','Type','Strike','Expiry','DTE','Last','Bid','Ask','Spread_pct','Volume_today','Volume_last_15m','Delta','IV','EMA_fast','EMA_slow','Gap_pct','Cross_bars_ago','Last_bar_UTC','RS_vs_SPY','Sector','Sector_vs_SPY','Score','Tier'];
+ const L=[h,...OP.view.map(r=>[r.und,oLabel(r),r.sym,r.type,r.strike,r.exp,r.dte,r.last,r.bp,r.ap,r.spr==null?'':r.spr.toFixed(2),r.vol,r.bv,r.delta,r.iv,r.ef.toFixed(4),r.es.toFixed(4),r.gap.toFixed(2),r.ago,r.lastT,r.rs==null?'':r.rs.toFixed(2),r.sec||'',r.secPct==null?'':r.secPct.toFixed(2),r.score,r.tier])].map(x=>x.map(q).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download='cytocine-options-scan.csv';a.click()};
 let oTimer;$('oauto').onchange=e=>{clearInterval(oTimer);if(e.target.checked)oTimer=setInterval(()=>{if(!document.hidden&&tab==='O')oscan()},60000)};
 
