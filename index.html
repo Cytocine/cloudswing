@@ -159,11 +159,18 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 #omsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
 #otab tr[data-s]{cursor:pointer}#otab tr.hot td{background:#fff1c9}#otab tr.watch td{background:#fffaea}#otab tr.hot td:first-child{box-shadow:inset 4px 0 #f5a623}#otab tr.watch td:first-child{box-shadow:inset 4px 0 #f7d58a}#otab tr.on td{background:rgba(41,98,255,.10)}
 @media(max-width:720px){#obar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#obar>*{flex:none}#obar input[type=number]{width:60px!important}}
+#pbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--line)}
+#pgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));grid-auto-rows:minmax(170px,1fr);gap:6px;padding:6px;overflow:auto}
+#pmsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
+.tile.pbull .mh{background:#2e9e4f22}.tile.pbear .mh{background:#f2364520}
+.tile .rm{padding:0 7px}
+@media(max-width:720px){#pbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#pbar::-webkit-scrollbar{display:none}#pbar>*{flex:none}#pslots{flex-wrap:nowrap!important}
+ #pgrid{--cols:1!important;grid-auto-rows:min(60dvh,520px)}}
 </style></head>
 <body data-tab="C">
 <header>
  <b>Cytocine Levels</b>
- <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button><button class="tab" id="tabO">Options</button>
+ <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button><button class="tab" id="tabO">Options</button><button class="tab" id="tabP">Opt Multi</button>
  <input id="sym" value="TSLA" aria-label="Symbol">
  <select id="tf" aria-label="Timeframe"><option value="15Min" selected>15m</option><option value="30Min">30m</option><option value="1Hour">1h</option><option value="1Day">1D</option></select>
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
@@ -250,11 +257,22 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label title="Only strikes within this % of the stock price (0 = all strikes)">Strike ±% <input id="oband" type="number" min="0" max="100" value="20" style="width:52px"></label>
    <label title="15-minute option chart: fast EMA above slow EMA on the latest bar">15m EMA <input id="oef" type="number" min="2" max="100" value="10" style="width:46px"> &gt; <input id="oes" type="number" min="3" max="200" value="20" style="width:46px"></label>
    <label title="Indicative = free options feed, OPRA = paid real-time">Data <select id="ofeed"><option value="indicative">Indicative (free)</option><option value="opra">OPRA (paid)</option></select></label>
-   <label title="Show at most this many contracts per stock (best ranked first)">Per stock <input id="opn" type="number" min="1" max="10" value="2" style="width:46px"></label><button class="p" id="orun">Scan</button><button id="oexp">Export CSV</button><label><input type="checkbox" id="oauto">Auto 60s</label>
+   <label title="Show at most this many contracts per stock (best ranked first)">Per stock <input id="opn" type="number" min="1" max="10" value="2" style="width:46px"></label><button class="p" id="orun">Scan</button><button id="osend" title="Send the top 6 contracts (by score) to the Opt Multi tab">→ Opt Multi</button><button id="oexp">Export CSV</button><label><input type="checkbox" id="oauto">Auto 60s</label>
   </div>
   <div id="owrap"><div id="oreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div><div class="tw"><table class="t" id="otab"></table></div></div>
   <div id="opanel" class="hid"><div class="ph"><button id="oprev" title="Previous (Up arrow)">◀</button><button id="onext" title="Next (Down arrow)">▶</button><b id="ophs"></b><span id="ophi"></span><span class="sp"></span><button id="oopen" title="Open the underlying in the Chart tab">↗ Chart</button><button id="opx" title="Close chart">✕</button></div><div id="och"><canvas id="ocv"></canvas><div id="ochc"></div></div></div>
   <div id="omsg">Press Scan. Tracks the watchlist (or ★ Focus list). Needs keys or a proxy URL.</div>
+ </section>
+ <section id="pv" class="hid">
+  <div id="pbar">
+   <span id="pslots" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>
+   <label title="Fast / slow EMA on each option's 15m chart">EMA <input id="pef" type="number" min="2" max="100" value="10" style="width:46px"> / <input id="pes" type="number" min="3" max="200" value="20" style="width:46px"></label>
+   <label title="Trading days shown">Days <input id="pdays" type="number" min="1" max="10" value="3" style="width:46px"></label>
+   <label title="Charts per row (phones always use 1)">Cols <select id="pcols"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>
+   <button id="pfill" title="Fill the six slots with the highest-scoring contracts from the last Options scan">Fill from Options</button><button id="pclr">Clear</button>
+   <button id="pexp" title="Download the whole setup (watchlist, drawings, alerts, option filters, these charts) as one JSON file">⬇ Export JSON</button><button id="pimp" title="Load a JSON file made by Export JSON on another computer">⬆ Import JSON</button>
+  </div>
+  <div id="pgrid"></div><div id="pmsg">Type up to 6 contracts above (for example AAPL 11/20 250C, or the full OCC symbol), or use ＋ in the Options tab.</div>
  </section>
  <section id="sv" class="hid">
   <div id="sbar">
@@ -410,6 +428,7 @@ async function load(){
 // live update: merge the newest bars, rebuild, keep the view where it was
 async function tick(){
  if(tab==='M'){mtick();return}
+ if(tab==='P'){ptick();return}
  if(tab==='S'||tab==='O')return;
  if(!$('live').checked||document.hidden||busy||!raw.length)return;
  sigEnsure(SYM,rows.length?rows[0].time:0,drawPlan);
@@ -521,6 +540,7 @@ function draw(){
    dx.restore()}}
  if(tab==='M')mpaint();
  if(tab==='O')opaint();
+ if(tab==='P')ppaint();
  requestAnimationFrame(draw)}
 requestAnimationFrame(draw);
 
@@ -613,7 +633,7 @@ async function quotes(){
   W.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
 $('wl').onclick=e=>{const st=e.target.closest('.st');
  if(st){const k=st.dataset.st;fav=fav.includes(k)?fav.filter(x=>x!==k):[...fav,k];saveFav();focusUI();if(focus){wlChanged()}else renderWL();return}
- const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else if(tab==='O'){OP.flt=OP.flt===w.dataset.s?'':w.dataset.s;renderO()}else{$('sym').value=w.dataset.s;load()}}};
+ const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else if(tab==='O'){OP.flt=OP.flt===w.dataset.s?'':w.dataset.s;renderO()}else if(tab==='P'){OP.flt=w.dataset.s;setTab('O')}else{$('sym').value=w.dataset.s;load()}}};
 const curSym=()=>tab==='M'?(msel||''):$('sym').value.trim().toUpperCase();
 function addBtn(){const b=$('add');if(!b)return;const k=curSym(),has=wl.includes(k);b.textContent=has?'− Watch':'+ Watch';b.title=has?'Remove '+k+' from the watchlist':'Add '+(k||'the current symbol')+' to the watchlist'}
 function wlChanged(){saveWL();renderWL();quotes();trends();wsSync()}
@@ -792,7 +812,7 @@ function pickM(sym,ns){msel=sym;document.querySelectorAll('.tile').forEach(e=>e.
  document.querySelectorAll('#mj button').forEach(b=>b.classList.toggle('on',b.dataset.s===sym));
  if(!ns){const el=document.querySelector('.tile.sel');if(el)el.scrollIntoView({block:'nearest'})}renderWL()}
 function openChart(sym){$('sym').value=sym;setTab('C');load()}
-function nav(d){if(tab==='S'){snav(d);return}if(tab==='O'){onav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
+function nav(d){if(tab==='S'){snav(d);return}if(tab==='O'){onav(d);return}if(tab==='P'){pnav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
  const n=ORDER.length;if(!n)return;
  const i=ORDER.indexOf(SYM),k=i<0?(d>0?0:n-1):(i+d+n)%n;
  $('sym').value=ORDER[k];document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===ORDER[k]));
@@ -801,8 +821,8 @@ function setTab(t){const pt=tab;cancelDraw();tab=t;document.body.dataset.tab=t;s
  if(t==='C'){if(pt==='M'&&msel)$('sym').value=msel;const sy=$('sym').value.trim().toUpperCase(),dy=Math.max(2,+$('days').value||5);
   if(pt==='M'){$('col').value=$('mcol').value;$('wid').value=$('mwid').value;if(sy===SYM){D=loadDr(sy);hist=[];selD=null}} // pick up drawings made in Multi
   if(hasKey()&&(sy!==SYM||lastTf!==$('tf').value||lastDays!==dy)&&!busy)setTimeout(load,0)}
- $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('sv').classList.toggle('hid',t!=='S');$('ov').classList.toggle('hid',t!=='O');
- ['C','M','S','O'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();if(t==='O')renderO();
+ $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('sv').classList.toggle('hid',t!=='S');$('ov').classList.toggle('hid',t!=='O');$('pv').classList.toggle('hid',t!=='P');
+ ['C','M','S','O','P'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();if(t==='O')renderO();if(t==='P')pk();
  if(t==='M'){$('mcol').value=$('col').value;$('mwid').value=$('wid').value;const s=msyms();if(!s.includes(msel))msel=s.includes(SYM)?SYM:(s[0]||'');mk()}
  syncToggles();renderWL()}
 function setLay(n){n=n===2?2:1;$('grid').classList.toggle('c2',n===2);$('lay').textContent=n===2?'▦ 2':'▥ 1';store.set('mlay',''+n)}
@@ -811,7 +831,7 @@ $('mj').onclick=e=>{const b=e.target.closest('button');if(!b)return;pickM(b.data
 // phone: while scrolling the 1-per-row Multi grid, the chart at the top is the selected one (so tapping a watchlist symbol swaps the chart you are looking at)
 let sfT;$('grid').addEventListener('scroll',()=>{if(!matchMedia('(max-width:720px)').matches||$('grid').classList.contains('c2'))return;clearTimeout(sfT);
  sfT=setTimeout(()=>{const g=$('grid').getBoundingClientRect().top;let best=null,bd=1e9;document.querySelectorAll('#grid .tile').forEach(t=>{const d=Math.abs(t.getBoundingClientRect().top-g);if(d<bd){bd=d;best=t}});if(best&&best.dataset.s!==msel)pickM(best.dataset.s,true)},140)},{passive:true});
-$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');$('tabO').onclick=()=>setTab('O');
+$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');$('tabO').onclick=()=>setTab('O');$('tabP').onclick=()=>setTab('P');
 $('grid').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;if(e.target.closest('.op'))openChart(t.dataset.s);else pickM(t.dataset.s)};
 $('grid').ondblclick=e=>{if(Date.now()-mDrawT<600)return;const t=e.target.closest('.tile');if(t)openChart(t.dataset.s)};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur()});
@@ -1297,16 +1317,16 @@ let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTi
 
 // ---------- export / import drawings + price alerts (JSON file) ----------
 const SYM_RE=/^[A-Z][A-Z0-9.\-]{0,9}$/,DTYPES=['trend','ray','hline','rect','fib','pos','text'];
-function flash(t,e){if(tab==='M'){$('mmsg').textContent=t}else if(tab==='S'){$('smsg').textContent=t}else msg(t,e)}
+function flash(t,e){if(tab==='M'){$('mmsg').textContent=t}else if(tab==='S'){$('smsg').textContent=t}else if(tab==='O'){$('omsg').textContent=t}else if(tab==='P'){$('pmsg').textContent=t}else msg(t,e)}
 function drKeys(){const k=new Set(Object.keys(mem));try{if(ls)for(let i=0;i<ls.length;i++)k.add(ls.key(i))}catch(e){}return[...k].filter(x=>x.startsWith('dr_'))}
 function exportDr(){
  const out={},al=[];let nd=0;
  drKeys().sort().forEach(k=>{const sym=k.slice(3),a=loadDr(sym);if(!SYM_RE.test(sym)||!a.length)return;out[sym]=a;nd+=a.length;
   a.forEach(d=>{if(d.alert&&d.pts&&d.pts[0])al.push({symbol:sym,price:d.pts[0].p,direction:d.dir||null,fired:!!d.fired})})});
- const data={app:'cytocine-levels',kind:'backup',version:2,exported:new Date().toISOString(),watchlist:wl.slice(),favorites:fav.slice(),focus,multi:msyms(),alerts:al,drawings:out};
+ const data={app:'cytocine-levels',kind:'backup',version:3,optmulti:omExport(),options:oExport(),exported:new Date().toISOString(),watchlist:wl.slice(),favorites:fav.slice(),focus,multi:msyms(),alerts:al,drawings:out};
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,DREP,2)],{type:'application/json'}));
  a.download='cytocine-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
- flash(`Exported ${wl.length} watchlist symbols + ${nd} drawings (${al.length} price alerts). Copy the file to the other device and use Import JSON there.`)}
+ flash(`Exported ${wl.length} watchlist symbols + ${nd} drawings (${al.length} price alerts) + ${OM.syms.filter(Boolean).length} option charts. Copy the file to the other device and use Import JSON there.`)}
 function cleanDr(a){const need=t=>t==='pos'?3:t==='hline'||t==='text'?1:2;
  return(Array.isArray(a)?a:[]).filter(d=>d&&typeof d==='object'&&DTYPES.includes(d.type)&&Array.isArray(d.pts)&&d.pts.length>=need(d.type)&&d.pts.every(q=>q&&isFinite(q.t)&&isFinite(q.p)))
   .map(d=>{const o=JSON.parse(JSON.stringify(d,DREP));if(o.id==null)o.id=Date.now()+Math.random();if(o.text!=null)o.text=String(o.text).slice(0,200);return o})}
@@ -1318,8 +1338,8 @@ async function importDr(file){
    inW=clean(j.watchlist).slice(0,500),inM=clean(j.multi).slice(0,6),inF=clean(j.favorites);
   const plan=[];let nd=0,na=0;
   Object.keys(src).forEach(k=>{const sym=k.toUpperCase();if(!SYM_RE.test(sym))return;const inc=cleanDr(src[k]).slice(0,500);if(!inc.length)return;plan.push([sym,inc]);nd+=inc.length;na+=inc.filter(d=>d.alert).length});
-  if(!plan.length&&!inW.length)throw new Error('no watchlist or drawings found in this file');
-  if(!confirm(`Import ${inW.length?inW.length+' watchlist symbols and ':''}${nd} drawings (${na} price alerts) for ${plan.length} symbols?\n\nOK = continue (drawings are merged into what is already here, nothing is deleted).\nCancel = do nothing.`))return;
+  if(!plan.length&&!inW.length&&!j.optmulti&&!j.options)throw new Error('no watchlist or drawings found in this file');
+  if(!confirm(`Import ${inW.length?inW.length+' watchlist symbols and ':''}${nd} drawings (${na} price alerts) for ${plan.length} symbols${j.optmulti||j.options?' + the options / Opt Multi setup':''}?\n\nOK = continue (drawings are merged into what is already here, nothing is deleted).\nCancel = do nothing.`))return;
   let wm='';
   if(inW.length){const same=inW.length===wl.length&&inW.every(k=>wl.includes(k));let rep=true;
    if(!same)rep=confirm(`Watchlist: the file has ${inW.length} symbols, this device has ${wl.length}.\n\nOK = replace this device's watchlist with the file's list.\nCancel = merge (keep mine and add the missing ones).`);
@@ -1329,7 +1349,10 @@ async function importDr(file){
    saveWL();renderWL();quotes();trends();wsSync();wm=`${wl.length} watchlist symbols, `}
   plan.forEach(([sym,inc])=>{const m=new Map(loadDr(sym).map(d=>[String(d.id),d]));inc.forEach(d=>m.set(String(d.id),d));const arr=[...m.values()];
    store.set('dr_'+sym,JSON.stringify(arr,DREP));applyDr(sym,arr);dpush(sym)});
-  flash(`Imported ${wm}${nd} drawings (${na} price alerts) for ${plan.length} symbols.`)}
+  let om='';
+  if(j.options&&typeof j.options==='object'){OIDS.forEach(i=>{const v=j.options[i];if(v!=null&&v!=='')$(i).value=v});saveO();om+=' Options filters restored.'}
+  if(j.optmulti&&typeof j.optmulti==='object'){const c=applyOM(j.optmulti);om+=` ${c} Opt Multi charts restored.`}
+  flash(`Imported ${wm}${nd} drawings (${na} price alerts) for ${plan.length} symbols.${om}`)}
  catch(e){flash('Import failed: '+e.message,1)}}
 $('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile').click()};$('dfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importDr(f)};
 
@@ -1423,7 +1446,7 @@ function renderO(){
  const p=v=>v==null?'–':fm(v,2),sgn=v=>(v>=0?'+':'')+fm(v,1);
  $('otab').innerHTML=rs.length?`<thead><tr><th data-sort="score" title="Attention score out of 7: stock relative strength, sector strength, fresh cross, tight spread, volume. Hover a score for details.">Focus</th><th data-sort="und">Stock</th><th>Contract</th><th data-sort="last">Last</th><th>Bid / Ask</th><th data-sort="spr" title="Bid-ask spread as % of mid">Spr %</th><th data-sort="vol" title="Contract volume today">Vol</th><th data-sort="bv" title="Volume of the newest 15m bar">15m Vol</th><th data-sort="delta">Δ</th><th data-sort="iv">IV %</th><th data-sort="dte">DTE</th><th data-sort="gap" title="Fast EMA above slow EMA, in %">Gap %</th><th data-sort="ago" title="15m bars since the fast EMA crossed above the slow (0 = latest bar)">Cross ago</th><th data-sort="rs" title="Stock % change today minus SPY. Green = in the direction of the trade (calls: stronger than SPY, puts: weaker)">RS vs SPY</th><th data-sort="secPct" title="Sector / theme ETF % change today minus SPY">Sector</th><th data-sort="score">Score</th><th>Last bar (ET)</th><th></th></tr></thead><tbody>`+
   rs.map(r=>{const sg=r.type==='call'?1:-1,tip=ATN.map((n,i)=>(r.f[i]?'✓ ':'✗ ')+n).join(' · ')+(r.type==='put'?' (puts: weakness counts)':'');
-   return`<tr data-s="${r.sym}" class="${r.tier}${r.sym===OP.sel?' on':''}"><td>${r.tier==='hot'?'<b style="color:#d98200">🔥 HOT</b>':r.tier==='watch'?'<b style="color:#8a6d00">◉ WATCH</b>':''}</td><td><b>${r.und}</b>${r.isNew?' <span class="up" title="New since the last scan">●new</span>':''}</td><td>${oLabel(r)}</td><td>${p(r.last)}</td><td>${p(r.bp)} / ${p(r.ap)}</td><td class="${r.spr!=null&&r.spr>15?'dn':''}">${r.spr==null?'–':fm(r.spr,1)}</td><td><b>${r.vol.toLocaleString()}</b></td><td>${r.bv.toLocaleString()}</td><td>${r.delta==null?'–':fm(r.delta,2)}</td><td>${r.iv==null?'–':fm(r.iv*100,0)}</td><td>${r.dte}</td><td class="up">+${fm(r.gap,1)}</td><td>${r.ago===0?'now':r.ago}</td><td class="${r.rs==null?'':r.rs*sg>0?'up':'dn'}">${r.rs==null?'–':sgn(r.rs)}</td><td class="${r.secPct==null?'':r.secPct*sg>0?'up':'dn'}" title="${r.sec?r.sec+' ETF vs SPY':'No sector mapped for this ticker'}">${r.sec?r.sec+(r.secPct!=null?' '+sgn(r.secPct):''):'–'}</td><td title="${tip}"><b>${r.score}/7</b></td><td>${new Date(r.lastT).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td><button class="op" data-o="${r.und}" title="Open the stock in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
+   return`<tr data-s="${r.sym}" class="${r.tier}${r.sym===OP.sel?' on':''}"><td>${r.tier==='hot'?'<b style="color:#d98200">🔥 HOT</b>':r.tier==='watch'?'<b style="color:#8a6d00">◉ WATCH</b>':''}</td><td><b>${r.und}</b>${r.isNew?' <span class="up" title="New since the last scan">●new</span>':''}</td><td>${oLabel(r)}</td><td>${p(r.last)}</td><td>${p(r.bp)} / ${p(r.ap)}</td><td class="${r.spr!=null&&r.spr>15?'dn':''}">${r.spr==null?'–':fm(r.spr,1)}</td><td><b>${r.vol.toLocaleString()}</b></td><td>${r.bv.toLocaleString()}</td><td>${r.delta==null?'–':fm(r.delta,2)}</td><td>${r.iv==null?'–':fm(r.iv*100,0)}</td><td>${r.dte}</td><td class="up">+${fm(r.gap,1)}</td><td>${r.ago===0?'now':r.ago}</td><td class="${r.rs==null?'':r.rs*sg>0?'up':'dn'}">${r.rs==null?'–':sgn(r.rs)}</td><td class="${r.secPct==null?'':r.secPct*sg>0?'up':'dn'}" title="${r.sec?r.sec+' ETF vs SPY':'No sector mapped for this ticker'}">${r.sec?r.sec+(r.secPct!=null?' '+sgn(r.secPct):''):'–'}</td><td title="${tip}"><b>${r.score}/7</b></td><td>${new Date(r.lastT).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td><button class="op" data-m="${r.sym}" title="Add this contract to Opt Multi">＋</button> <button class="op" data-o="${r.und}" title="Open the stock in Chart">↗</button></td></tr>`}).join('')+'</tbody>'
   :'<tbody><tr><td class="hint" style="padding:14px">'+(st?'No contracts pass all filters. Try a lower volume, a wider strike range, or a higher Max DTE.':'Press Scan.')+'</td></tr></tbody>';
  odraw()}
 let OCH=null;
@@ -1453,6 +1476,7 @@ function opaint(){const pn=$('opanel');if(!OCH||!OCH.rows.length||pn.classList.c
  back(c,OCH.c.timeScale(),OCH.cs,OCH.rows,OCH.clouds,w,h,w-OCH.c.priceScale('right').width(),[],false)}
 function onav(d){const k=OP.view.map(r=>r.sym);if(!k.length)return;const i=k.indexOf(OP.sel);OP.sel=k[(i<0?0:i+d+k.length)%k.length];renderO();const el=document.querySelector('#otab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
 $('otab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(OP.sort.k!==k)OP.sort={k,dir:-1};else if(OP.sort.dir<0)OP.sort.dir=1;else OP.sort={k:'',dir:-1};renderO();return}
+ const m=e.target.closest('[data-m]');if(m){omAdd([m.dataset.m]);return}
  const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){OP.sel=r.dataset.s;renderO()}};
 $('oreg').onclick=e=>{if(e.target.closest('[data-clr]')){OP.flt='';renderO()}};
 $('opx').onclick=()=>{OP.sel='';renderO()};$('oprev').onclick=()=>onav(-1);$('onext').onclick=()=>onav(1);
@@ -1463,6 +1487,109 @@ $('oexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v
  const L=[h,...OP.view.map(r=>[r.und,oLabel(r),r.sym,r.type,r.strike,r.exp,r.dte,r.last,r.bp,r.ap,r.spr==null?'':r.spr.toFixed(2),r.vol,r.bv,r.delta,r.iv,r.ef.toFixed(4),r.es.toFixed(4),r.gap.toFixed(2),r.ago,r.lastT,r.rs==null?'':r.rs.toFixed(2),r.sec||'',r.secPct==null?'':r.secPct.toFixed(2),r.score,r.tier])].map(x=>x.map(q).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download='cytocine-options-scan.csv';a.click()};
 let oTimer;$('oauto').onchange=e=>{clearInterval(oTimer);if(e.target.checked)oTimer=setInterval(()=>{if(!document.hidden&&tab==='O')oscan()},60000)};
+
+
+// ================= OPT MULTI TAB =================
+// Up to six option contracts side by side: 15m candles, alternating day backgrounds, EMA bullish / bearish cloud.
+// The setup (contracts, EMA, days, columns) is saved in this browser and travels in the same Export / Import JSON as everything else.
+const OM={syms:['','','','','',''],fast:10,slow:20,days:3,cols:3,bars:{},snap:{},tiles:[],sel:'',busy:false};
+const OMsave=()=>store.set('comv',JSON.stringify({slots:OM.syms,fast:OM.fast,slow:OM.slow,days:OM.days,cols:OM.cols}));
+const omExport=()=>({slots:OM.syms.slice(),fast:OM.fast,slow:OM.slow,days:OM.days,cols:OM.cols});
+const oExport=()=>{const o={};OIDS.forEach(i=>o[i]=$(i).value);return o};
+const labelOf=sy=>{const m=OCC.exec(sy||'');return m?`${m[1]} ${m[2].slice(2,4)}/${m[2].slice(4)} ${+m[4]/1000}${m[3]}`:(sy||'')};
+function parseContract(t){t=String(t||'').trim().toUpperCase().replace(/\s+/g,' ');if(!t)return'';
+ const c=t.replace(/\s/g,'');if(/^[A-Z][A-Z0-9.]{0,5}\d{6}[CP]\d{8}$/.test(c))return c;
+ const m=/^([A-Z][A-Z0-9.]{0,5}) (\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))? (\d+(?:\.\d+)?) ?([CP])$/.exec(t);if(!m)return'';
+ const now=et(Date.now()/1e3).d,mk=yy=>`${yy}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+ let y=m[4]?(m[4].length===2?2000+(+m[4]):+m[4]):+now.slice(0,4),d=mk(y);if(!m[4]&&d<now)d=mk(y+1);
+ return m[1]+d.slice(2,4)+d.slice(5,7)+d.slice(8,10)+m[6]+String(Math.round(+m[5]*1000)).padStart(8,'0')}
+function syncOMui(){$('pef').value=OM.fast;$('pes').value=OM.slow;$('pdays').value=OM.days;$('pcols').value=String(OM.cols)}
+function applyOM(o){if(!o||typeof o!=='object')return 0;
+ const sl=(Array.isArray(o.slots)?o.slots:[]).map(x=>{x=String(x||'').toUpperCase();return/^[A-Z][A-Z0-9.]{0,5}\d{6}[CP]\d{8}$/.test(x)?x:''}).slice(0,6);while(sl.length<6)sl.push('');
+ OM.syms=sl;
+ if(isFinite(o.fast)&&isFinite(o.slow)){OM.fast=Math.max(2,Math.min(100,(+o.fast)|0));OM.slow=Math.max(OM.fast+1,Math.min(200,(+o.slow)|0))}
+ if(isFinite(o.days))OM.days=Math.max(1,Math.min(10,(+o.days)|0));if(isFinite(o.cols))OM.cols=Math.max(1,Math.min(4,(+o.cols)|0));
+ OMsave();syncOMui();if(tab==='P')pk();return sl.filter(Boolean).length}
+try{const v=JSON.parse(store.get('comv')||'null');if(v)applyOM(v)}catch(e){}syncOMui();
+function omAdd(list){let n=0,full=false;list.forEach(sy=>{if(OM.syms.includes(sy))return;const i=OM.syms.indexOf('');if(i<0){full=true;return}OM.syms[i]=sy;n++});
+ OMsave();const t=n?`${n} contract${n>1?'s':''} added to Opt Multi.`:full?'Opt Multi is full (6). Clear a slot there first.':'Already in Opt Multi.';
+ if(tab==='O')$('omsg').textContent=t;else if(tab==='P')$('pmsg').textContent=t;if(tab==='P')pk()}
+function pslots(){const h=$('pslots');h.innerHTML='';
+ for(let i=0;i<6;i++){const inp=document.createElement('input');inp.value=labelOf(OM.syms[i]);inp.placeholder='AAPL 11/20 250C';inp.setAttribute('aria-label','Option chart '+(i+1));
+  inp.style.cssText='width:132px;text-transform:uppercase;text-align:center';
+  inp.onchange=()=>{const raw=inp.value.trim();
+   if(!raw){OM.syms[i]='';OMsave();pk();return}
+   const sy=parseContract(raw);
+   if(!sy){inp.value=labelOf(OM.syms[i]);$('pmsg').textContent='Not recognised. Use e.g. AAPL 11/20 250C (symbol, month/day, strike, C or P) or the full OCC symbol.';$('pmsg').className='err';return}
+   if(OM.syms.includes(sy)&&OM.syms[i]!==sy){inp.value=labelOf(OM.syms[i]);$('pmsg').textContent=labelOf(sy)+' is already on this tab.';return}
+   $('pmsg').className='';OM.syms[i]=sy;OMsave();pk()};
+  h.appendChild(inp)}}
+async function pfetch(syms,full){if(!syms.length||!hasKey())return;
+ const by=await optBars(syms,new Date(Date.now()-(full?9:2)*864e5).toISOString());
+ syms.forEach(k=>{OM.bars[k]=mergeBars(full?[]:(OM.bars[k]||[]),by[k]||[])})}
+async function psnap(syms){if(!syms.length||!hasKey())return;
+ try{const j=await getRetry(`https://data.alpaca.markets/v1beta1/options/snapshots?symbols=${syms.map(encodeURIComponent).join(',')}&feed=${$('ofeed').value}`);Object.assign(OM.snap,j.snapshots||{})}catch(e){}}
+function pk(){
+ OM.tiles.forEach(t=>t.ch.remove());OM.tiles=[];$('pgrid').innerHTML='';pslots();$('pgrid').style.setProperty('--cols',OM.cols);
+ const syms=OM.syms.filter(Boolean);
+ if(!syms.length){$('pmsg').className='';$('pmsg').textContent='Type up to 6 contracts above (for example AAPL 11/20 250C, or the full OCC symbol), or use ＋ in the Options tab.';return}
+ syms.forEach(sy=>{
+  const el=document.createElement('div');el.className='tile'+(sy===OM.sel?' sel':'');el.dataset.s=sy;
+  el.innerHTML=`<div class="mh"><b>${labelOf(sy)}</b><span class="tp"></span><button class="op" title="Open the stock in Chart">↗</button><button class="rm" title="Remove this chart">✕</button></div><div class="mb"><canvas></canvas><div class="tc"></div></div>`;
+  $('pgrid').appendChild(el);
+  const c=LightweightCharts.createChart(el.querySelector('.tc'),{autoSize:true,
+   layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:10},grid:{vertLines:{visible:false},horzLines:{visible:false}},
+   rightPriceScale:{borderColor:'#e3e6ec',autoScale:true,scaleMargins:{top:.08,bottom:.08}},
+   timeScale:{borderColor:'#e3e6ec',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0},
+   handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true}});
+  const ln=col=>c.addLineSeries({color:col,lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  OM.tiles.push({sym:sy,el,ch:c,cs:c.addCandlestickSeries({priceLineVisible:false,lastValueVisible:true,borderVisible:true}),f:ln('#2e9e4f'),s:ln('#f23645'),cv:el.querySelector('canvas'),rows:[],clouds:[],fitted:false});
+  if(OP.bars[sy]&&!OM.bars[sy])OM.bars[sy]=OP.bars[sy]});
+ const miss=syms.filter(k=>!OM.bars[k]);pupd();
+ if(hasKey()){$('pmsg').className='';$('pmsg').textContent='Loading '+(miss.length?miss.map(labelOf).join(', '):'quotes')+'…';
+  Promise.all([pfetch(miss,true),psnap(syms)]).then(()=>{pupd();$('pmsg').textContent=`15m · ${OM.days} days · updated ${new Date().toLocaleTimeString()}`}).catch(e=>{$('pmsg').textContent=e.message;$('pmsg').className='err'})}
+ else{$('pmsg').textContent='Add your Alpaca keys (or a proxy URL) to load option bars.';$('pmsg').className='err'}}
+function pupd(){
+ OM.tiles.forEach(t=>{const b=OM.bars[t.sym],tp=t.el.querySelector('.tp');
+  if(!b||!b.length){tp.textContent=hasKey()?'no bars (expired or no trades)':'';return}
+  const cl=b.map(x=>x.c),e1=ema(cl,OM.fast),e2=ema(cl,OM.slow),sec=b.map(x=>Date.parse(x.t)/1e3),tm=sec.map(s=>s+et(s).sh),ds=sec.map(s=>et(s).d),
+   dl=[...new Set(ds)].slice(-OM.days),c0=Math.max(0,ds.findIndex(d=>dl.includes(d))),n=b.length-1;
+  t.rows=b.slice(c0).map((x,i)=>({time:tm[c0+i],d:ds[c0+i]}));
+  t.clouds=[{sv:e1.slice(c0),lv:e2.slice(c0),u:'#2e9e4f',d:'#f23645',a:.30}];
+  t.cs.setData(b.slice(c0).map((x,i)=>({time:tm[c0+i],open:x.o,high:x.h,low:x.l,close:x.c})));
+  t.f.setData(tm.slice(c0).map((v,i)=>({time:v,value:e1[c0+i]})));t.s.setData(tm.slice(c0).map((v,i)=>({time:v,value:e2[c0+i]})));
+  if(!t.fitted){t.ch.priceScale('right').applyOptions({autoScale:true});t.ch.timeScale().fitContent();t.fitted=true}
+  const bull=e1[n]>e2[n];t.el.classList.toggle('pbull',bull);t.el.classList.toggle('pbear',!bull);
+  const pd=ds.filter(d=>d!==ds[n]).pop(),pc=pd?b[ds.lastIndexOf(pd)].c:null,chg=pc?(b[n].c/pc-1)*100:null,
+   sn=OM.snap[t.sym]||{},lq=sn.latestQuote||{},mid=lq.bp>0&&lq.ap>0?(lq.ap+lq.bp)/2:null,spr=mid?(lq.ap-lq.bp)/mid*100:null,
+   dv=sn.dailyBar&&sn.dailyBar.v,dl2=sn.greeks&&sn.greeks.delta,m=OCC.exec(t.sym),dte=m?dteOf('20'+m[2].slice(0,2)+'-'+m[2].slice(2,4)+'-'+m[2].slice(4)):null,
+   lastD=ds[n]===et(Date.now()/1e3).d?new Date(b[n].t).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}):new Date(b[n].t).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  tp.innerHTML=`${f(b[n].c)}${chg!=null?` <span class="${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''} · <span class="${bull?'up':'dn'}">${bull?'bull':'bear'}</span>`+(dv!=null?` · vol ${dv.toLocaleString()}`:'')+(spr!=null?` · spr ${spr.toFixed(0)}%`:'')+(dl2!=null?` · Δ ${dl2.toFixed(2)}`:'')+(dte!=null?` · ${dte}d`:'')+` · ${lastD}`})}
+async function ptick(){
+ if(!$('live').checked||document.hidden||OM.busy||!OM.tiles.length)return;OM.busy=true;
+ try{const s=OM.tiles.map(t=>t.sym);await pfetch(s,false);await psnap(s);pupd();$('pmsg').className='';$('pmsg').textContent=`15m · ${OM.days} days · live ● ${new Date().toLocaleTimeString()}`}
+ catch(e){$('pmsg').textContent='Live update failed: '+e.message;$('pmsg').className='err'}finally{OM.busy=false}}
+function ppaint(){const dpr=devicePixelRatio||1;
+ OM.tiles.forEach(t=>{const bx=t.cv.parentElement,w=bx.clientWidth,h=bx.clientHeight;
+  if(t.cv.width!==w*dpr||t.cv.height!==h*dpr){t.cv.width=w*dpr;t.cv.height=h*dpr}
+  const c=t.cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
+  if(t.rows.length)back(c,t.ch.timeScale(),t.cs,t.rows,t.clouds,w,h,w-t.ch.priceScale('right').width(),[],false)})}
+function pnav(d){const s=OM.syms.filter(Boolean);if(!s.length)return;const i=s.indexOf(OM.sel);OM.sel=s[(i<0?0:i+d+s.length)%s.length];
+ document.querySelectorAll('#pgrid .tile').forEach(e=>e.classList.toggle('sel',e.dataset.s===OM.sel));const el=document.querySelector('#pgrid .tile.sel');if(el)el.scrollIntoView({block:'nearest'})}
+$('pgrid').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;const sy=t.dataset.s;
+ if(e.target.closest('.op')){const m=OCC.exec(sy);if(m)openChart(m[1]);return}
+ if(e.target.closest('.rm')){const i=OM.syms.indexOf(sy);if(i>=0){OM.syms[i]='';OMsave();pk()}return}
+ OM.sel=sy;document.querySelectorAll('#pgrid .tile').forEach(x=>x.classList.toggle('sel',x.dataset.s===sy))};
+const pset=()=>{const a=Math.round(+$('pef').value),b=Math.round(+$('pes').value);
+ if(a>=2&&b>a){OM.fast=Math.min(100,a);OM.slow=Math.min(200,b)}
+ const d=Math.round(+$('pdays').value);if(d>=1)OM.days=Math.min(10,d);OM.cols=+$('pcols').value||3;OMsave();syncOMui();$('pgrid').style.setProperty('--cols',OM.cols);pupd()};
+['pef','pes','pdays','pcols'].forEach(i=>$(i).onchange=pset);
+$('pfill').onclick=()=>{const src=OP.view.length?OP.view:OP.res;if(!src.length){$('pmsg').textContent='Run a scan in the Options tab first.';return}
+ OM.syms=[...src].sort((a,b)=>b.score-a.score||b.vol-a.vol).slice(0,6).map(r=>r.sym);while(OM.syms.length<6)OM.syms.push('');OMsave();pk()};
+$('osend').onclick=()=>{const src=OP.view.length?OP.view:OP.res;if(!src.length){$('omsg').textContent='Run a scan first.';return}
+ OM.syms=[...src].sort((a,b)=>b.score-a.score||b.vol-a.vol).slice(0,6).map(r=>r.sym);while(OM.syms.length<6)OM.syms.push('');OMsave();$('omsg').textContent='Top '+OM.syms.filter(Boolean).length+' contracts sent to Opt Multi (replaced its slots).'};
+$('pclr').onclick=()=>{OM.syms=['','','','','',''];OMsave();pk()};
+$('pexp').onclick=exportDr;$('pimp').onclick=()=>{$('dfile').value='';$('dfile').click()};
 
 // ---------- wiring + restore saved settings ----------
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
@@ -1483,7 +1610,7 @@ magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
 $('bo').checked=store.get('cb')==='1';
 setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')===null?!matchMedia('(max-width:720px)').matches:store.get('mdr')!=='0');setLay(+store.get('mlay')===2?2:1);syncToggles();focusUI();renderWL();
 if(hasKey()){load();quotes();trends()}else $('kd').open=true;
-{const t0=store.get('ctab');if(['M','S','O'].includes(t0))setTab(t0)}
+{const t0=store.get('ctab');if(['M','S','O','P'].includes(t0))setTab(t0)}
 wsConnect();
 </script>
 <script>
