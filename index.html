@@ -150,17 +150,26 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
 .st{font-style:normal;color:#f5a623;cursor:pointer;padding:0 5px 0 0;font-size:14px}
 #folab{color:var(--ink)}
 @media(max-width:720px){.st{font-size:20px;padding:4px 8px 4px 0;line-height:1}}
+#obar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--line)}
+#owrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
+#opanel{flex:none;height:46%;min-height:230px;display:flex;flex-direction:column;border-top:2px solid var(--acc);background:#fff}
+#opanel .ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 10px;font-size:13px;border-bottom:1px solid var(--line)}
+#opanel .ph b{font-size:15px}#opanel .ph .sp{flex:1}#opanel .ph button{padding:0 10px;min-height:0;height:26px}
+#och{flex:1;min-height:0;position:relative}
+#omsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
+#otab tr[data-s]{cursor:pointer}#otab tr.on td{background:rgba(41,98,255,.10)}
+@media(max-width:720px){#obar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#obar>*{flex:none}#obar input[type=number]{width:60px!important}}
 </style></head>
 <body data-tab="C">
 <header>
  <b>Cytocine Levels</b>
- <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button>
+ <button class="tab on" id="tabC">Chart</button><button class="tab" id="tabM">Multi</button><button class="tab" id="tabS">Scanner</button><button class="tab" id="tabO">Options</button>
  <input id="sym" value="TSLA" aria-label="Symbol">
  <select id="tf" aria-label="Timeframe"><option value="15Min" selected>15m</option><option value="30Min">30m</option><option value="1Hour">1h</option><option value="1Day">1D</option></select>
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><label title="Account size in $ for position sizing (shown on the Entry line)">Acct $ <input id="acct" type="number" min="0" step="1000" value="25000" style="width:76px"></label><label title="Percent of the account risked per trade">Risk % <input id="rpct" type="number" min="0" max="10" step="0.05" value="0.5" style="width:56px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
@@ -230,6 +239,22 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <span class="hint">Drawings are saved per symbol and shared with the Chart tab</span>
   </div>
   <div id="grid"></div><div id="mmsg"></div>
+ </section>
+ <section id="ov" class="hid">
+  <div id="obar">
+   <label>Type <select id="otype"><option value="both">Calls + Puts</option><option value="call">Calls</option><option value="put">Puts</option></select></label>
+   <label title="Only contracts with MORE calendar days to expiry than this">DTE &gt; <input id="omind" type="number" min="0" max="365" value="7" style="width:52px"></label>
+   <label title="Upper limit on days to expiry (keeps the scan fast)">Max DTE <input id="omaxd" type="number" min="1" max="730" value="45" style="width:56px"></label>
+   <label title="Minimum option volume (strictly greater than)">Volume &gt; <input id="ominv" type="number" min="0" step="100" value="1000" style="width:68px"></label>
+   <label title="Which volume the minimum applies to">Volume of <select id="ovb"><option value="day">Today (total)</option><option value="bar">Last 15m bar</option></select></label>
+   <label title="Only strikes within this % of the stock price (0 = all strikes)">Strike ±% <input id="oband" type="number" min="0" max="100" value="20" style="width:52px"></label>
+   <label title="15-minute option chart: fast EMA above slow EMA on the latest bar">15m EMA <input id="oef" type="number" min="2" max="100" value="10" style="width:46px"> &gt; <input id="oes" type="number" min="3" max="200" value="20" style="width:46px"></label>
+   <label title="Indicative = free options feed, OPRA = paid real-time">Data <select id="ofeed"><option value="indicative">Indicative (free)</option><option value="opra">OPRA (paid)</option></select></label>
+   <button class="p" id="orun">Scan</button><button id="oexp">Export CSV</button><label><input type="checkbox" id="oauto">Auto 60s</label>
+  </div>
+  <div id="owrap"><div id="oreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div><div class="tw"><table class="t" id="otab"></table></div></div>
+  <div id="opanel" class="hid"><div class="ph"><button id="oprev" title="Previous (Up arrow)">◀</button><button id="onext" title="Next (Down arrow)">▶</button><b id="ophs"></b><span id="ophi"></span><span class="sp"></span><button id="oopen" title="Open the underlying in the Chart tab">↗ Chart</button><button id="opx" title="Close chart">✕</button></div><div id="och"></div></div>
+  <div id="omsg">Press Scan. Tracks the watchlist (or ★ Focus list). Needs keys or a proxy URL.</div>
  </section>
  <section id="sv" class="hid">
   <div id="sbar">
@@ -385,7 +410,7 @@ async function load(){
 // live update: merge the newest bars, rebuild, keep the view where it was
 async function tick(){
  if(tab==='M'){mtick();return}
- if(tab==='S')return;
+ if(tab==='S'||tab==='O')return;
  if(!$('live').checked||document.hidden||busy||!raw.length)return;
  sigEnsure(SYM,rows.length?rows[0].time:0,drawPlan);
  if(streaming()){quotes();if(Date.now()-tAt>60000)trends();return}
@@ -587,7 +612,7 @@ async function quotes(){
   W.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
 $('wl').onclick=e=>{const st=e.target.closest('.st');
  if(st){const k=st.dataset.st;fav=fav.includes(k)?fav.filter(x=>x!==k):[...fav,k];saveFav();focusUI();if(focus){wlChanged()}else renderWL();return}
- const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else{$('sym').value=w.dataset.s;load()}}};
+ const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else if(tab==='O'){OP.flt=OP.flt===w.dataset.s?'':w.dataset.s;renderO()}else{$('sym').value=w.dataset.s;load()}}};
 const curSym=()=>tab==='M'?(msel||''):$('sym').value.trim().toUpperCase();
 function addBtn(){const b=$('add');if(!b)return;const k=curSym(),has=wl.includes(k);b.textContent=has?'− Watch':'+ Watch';b.title=has?'Remove '+k+' from the watchlist':'Add '+(k||'the current symbol')+' to the watchlist'}
 function wlChanged(){saveWL();renderWL();quotes();trends();wsSync()}
@@ -766,7 +791,7 @@ function pickM(sym,ns){msel=sym;document.querySelectorAll('.tile').forEach(e=>e.
  document.querySelectorAll('#mj button').forEach(b=>b.classList.toggle('on',b.dataset.s===sym));
  if(!ns){const el=document.querySelector('.tile.sel');if(el)el.scrollIntoView({block:'nearest'})}renderWL()}
 function openChart(sym){$('sym').value=sym;setTab('C');load()}
-function nav(d){if(tab==='S'){snav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
+function nav(d){if(tab==='S'){snav(d);return}if(tab==='O'){onav(d);return}if(tab==='M'){const s=msyms();if(!s.length)return;const i=s.indexOf(msel);pickM(s[i<0?0:(i+d+s.length)%s.length]);return}
  const n=ORDER.length;if(!n)return;
  const i=ORDER.indexOf(SYM),k=i<0?(d>0?0:n-1):(i+d+n)%n;
  $('sym').value=ORDER[k];document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===ORDER[k]));
@@ -775,8 +800,8 @@ function setTab(t){const pt=tab;cancelDraw();tab=t;document.body.dataset.tab=t;s
  if(t==='C'){if(pt==='M'&&msel)$('sym').value=msel;const sy=$('sym').value.trim().toUpperCase(),dy=Math.max(2,+$('days').value||5);
   if(pt==='M'){$('col').value=$('mcol').value;$('wid').value=$('mwid').value;if(sy===SYM){D=loadDr(sy);hist=[];selD=null}} // pick up drawings made in Multi
   if(hasKey()&&(sy!==SYM||lastTf!==$('tf').value||lastDays!==dy)&&!busy)setTimeout(load,0)}
- $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('sv').classList.toggle('hid',t!=='S');
- ['C','M','S'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();
+ $('sc').classList.toggle('hid',t!=='C');$('mv').classList.toggle('hid',t!=='M');$('sv').classList.toggle('hid',t!=='S');$('ov').classList.toggle('hid',t!=='O');
+ ['C','M','S','O'].forEach(k=>$('tab'+k).classList.toggle('on',t===k));if(t==='S')renderS();if(t==='O')renderO();
  if(t==='M'){$('mcol').value=$('col').value;$('mwid').value=$('wid').value;const s=msyms();if(!s.includes(msel))msel=s.includes(SYM)?SYM:(s[0]||'');mk()}
  syncToggles();renderWL()}
 function setLay(n){n=n===2?2:1;$('grid').classList.toggle('c2',n===2);$('lay').textContent=n===2?'▦ 2':'▥ 1';store.set('mlay',''+n)}
@@ -785,7 +810,7 @@ $('mj').onclick=e=>{const b=e.target.closest('button');if(!b)return;pickM(b.data
 // phone: while scrolling the 1-per-row Multi grid, the chart at the top is the selected one (so tapping a watchlist symbol swaps the chart you are looking at)
 let sfT;$('grid').addEventListener('scroll',()=>{if(!matchMedia('(max-width:720px)').matches||$('grid').classList.contains('c2'))return;clearTimeout(sfT);
  sfT=setTimeout(()=>{const g=$('grid').getBoundingClientRect().top;let best=null,bd=1e9;document.querySelectorAll('#grid .tile').forEach(t=>{const d=Math.abs(t.getBoundingClientRect().top-g);if(d<bd){bd=d;best=t}});if(best&&best.dataset.s!==msel)pickM(best.dataset.s,true)},140)},{passive:true});
-$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');
+$('tabC').onclick=()=>setTab('C');$('tabM').onclick=()=>setTab('M');$('tabS').onclick=()=>setTab('S');$('tabO').onclick=()=>setTab('O');
 $('grid').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;if(e.target.closest('.op'))openChart(t.dataset.s);else pickM(t.dataset.s)};
 $('grid').ondblclick=e=>{if(Date.now()-mDrawT<600)return;const t=e.target.closest('.tile');if(t)openChart(t.dataset.s)};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur()});
@@ -995,10 +1020,22 @@ function condSeries(r){
 function evalCond(r){const x=condSeries(r)[r.length-1];if(!x)return null;x.t=r[r.length-1].t;return x}
 const stl=()=>(STFS[SC.rawTf||(SC.tfs[0]&&SC.tfs[0][1])]||STFS['30Min'])[3],stS=()=>(STFS[SC.rawTf||(SC.tfs[0]&&SC.tfs[0][1])]||STFS['30Min'])[4];
 const saveSF=()=>store.set('csf3',JSON.stringify([$('sn').value,$('sf').value,$('sb').value]));
+// Alerts fire only for signals on CLOSED bars (no intrabar repaint), come from the same cooldown-filtered event list the chart draws,
+// and are de-duplicated by symbol+side+bar time (persisted, so reloads do not repeat them).
+let NOTI={};try{NOTI=JSON.parse(store.get('cnoti')||'{}')}catch(e){NOTI={}}
+function alertNew(k,r,x){
+ if(!r||r.length<3)return;const st=stS()*1e3,now=Date.now(),closed=now>=Date.parse(r[r.length-1].t)+st;
+ const rc=closed?r:r.slice(0,-1),ev=closed?x.ev:sigList(rc);if(!ev||!ev.length)return;
+ const e=ev[ev.length-1],close=Date.parse(e.t)+st;
+ if(now-close>2*st+60000)return; // only fresh signals (last ~2 closed bars), never old history
+ const key=k+'|'+e.side+'|'+e.t;if(NOTI[key])return;NOTI[key]=now;
+ const ks=Object.keys(NOTI);if(ks.length>400){ks.sort((a,b)=>NOTI[a]-NOTI[b]).slice(0,ks.length-300).forEach(z=>delete NOTI[z])}
+ store.set('cnoti',JSON.stringify(NOTI));
+ notify(`${k}: ${e.side==='buy'?'BUY':'SELL'} on ${stl()} (bar closed) · signal px ${fm(e.px,2)}`)}
 function recompute(notifyNew){
  const out=[],bad=[],D=SC.raw||{};
  Object.keys(D).forEach(k=>{try{const r=D[k],x=evalCond(r);if(!x){bad.push(`${k} (${r?r.length:0} bars)`);return}x.sym=k;x.n=r.length;x.ev=sigList(r);
-  if(notifyNew&&SC.prev[k]===false&&x.buy)notify(`${k}: BUY conditions met on ${stl()} · close ${fm(x.px,2)}`);SC.prev[k]=!!x.buy;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
+  if(notifyNew)alertNew(k,r,x);SC.prev[k]=!!x.buy;out.push(x)}catch(e){bad.push(`${k} (${e.message})`)}});
  out.sort((a,b)=>b.met-a.met||b.gap-a.gap);SC.res=out;SC.bad=bad;renderS()}
 async function scan(){
  if(SC.busy)return;if(!hasKey()){$('kd').open=true;$('smsg').textContent='Add keys or a proxy URL first.';return}
@@ -1059,8 +1096,9 @@ function chartSigList(bars){const n=bars.length,W=sigW();if(n<=W+1)return[];
  let lastI=-1e9,last=s[W]?(s[W].buy?'buy':s[W].sell?'sell':''):'';
  for(let i=W+1;i<n;i++){const x=s[i];if(!x)continue;
   if(i-lastI<=CD)continue;
-  if(x.buy&&last!=='buy'){out.push({t:bars[i].t,side:'buy',px:x.px,i});last='buy';lastI=i}
-  else if(x.sell&&last!=='sell'){out.push({t:bars[i].t,side:'sell',px:x.px,i});last='sell';lastI=i}}
+  const pv=s[i-1],freshB=!(pv&&pv.buy),freshS=!(pv&&pv.sell); // must be a NEW transition: a state that turned true during cooldown and stayed true never fires late
+  if(x.buy&&freshB&&last!=='buy'){out.push({t:bars[i].t,side:'buy',px:x.px,i});last='buy';lastI=i}
+  else if(x.sell&&freshS&&last!=='sell'){out.push({t:bars[i].t,side:'sell',px:x.px,i});last='sell';lastI=i}}
  return out}
 function sigList(bars){return chartSigList(bars)}
 const SGC=new Map(); // symbol -> {bars,from,at,busy,list}
@@ -1143,17 +1181,22 @@ function qCells(r){const nm=['Not extended (<=2 ATR from EMA12)','RVOL >= 1.2','
  return`<td class="${r.q>=5?'up':r.q>=4?'':'dn'}" title="${tip}"><b>${r.q}/6</b></td><td class="${g(0)}">${r.ext==null?'–':fm(r.ext,1)}</td><td class="${g(1)}">${r.rv==null?'–':fm(r.rv,1)+'x'}</td><td class="${g(2)}" style="text-align:center;font-weight:700">${c[2]?'✓':'✗'}</td><td class="${g(3)}">${r.rs==null?'–':(r.rs>=0?'+':'')+fm(r.rs,1)}</td>`}
 
 // ---- Trade levels: stop = swing extreme of the last 8 bars (clamped to 1-2.5 ATR), T1 = 1.5R (take partial), T2 = 3R (trail the rest under the 12 EMA) ----
-function tradeLevels(bars,e,AT){const sg=e.side==='buy'?1:-1,i=e.i,a=AT[i];if(!(a>0)||!bars[i])return null;
+function tradeLevels(bars,e,AT){const E12=ema(bars.map(b=>b.c),12);const sg=e.side==='buy'?1:-1,i=e.i,a=AT[i];if(!(a>0)||!bars[i])return null;
  let sw=sg>0?Infinity:-Infinity;for(let j=Math.max(0,i-7);j<=i;j++)sw=sg>0?Math.min(sw,bars[j].l):Math.max(sw,bars[j].h);
  const entry=e.px;let risk=sg>0?entry-(sw-.1*a):(sw+.1*a)-entry;risk=Math.min(2.5*a,Math.max(a,risk));
- const stop=entry-sg*risk,t1=entry+sg*1.5*risk,t2=entry+sg*3*risk;let st='open',h1=false;
+ const stop=entry-sg*risk,t1=entry+sg*1.5*risk,t2=entry+sg*3*risk;let st='open',h1=false,cs=stop,R=null;
+ // Half is sold at T1; the stop then moves to breakeven and ratchets behind the 12 EMA (never backwards). Remaining half exits at the stop or T2.
  for(let j=i+1;j<bars.length;j++){const b=bars[j];
-  if(sg>0?b.l<=stop:b.h>=stop){st=h1?'T1 hit, then stopped':'stopped';break}
-  if(!h1&&(sg>0?b.h>=t1:b.l<=t1)){h1=true;st='T1 hit (trail)'}
-  if(sg>0?b.h>=t2:b.l<=t2){st='T2 hit';break}}
- return{entry,stop,t1,t2,risk,st}}
+  if(sg>0?b.l<=cs:b.h>=cs){const ex=(cs-entry)*sg/risk;R=h1?.5*1.5+.5*ex:ex;st=h1?'T1 hit, then stopped':'stopped';break}
+  if(!h1&&(sg>0?b.h>=t1:b.l<=t1)){h1=true;st='T1 hit (trail)';cs=entry}
+  if(sg>0?b.h>=t2:b.l<=t2){R=h1?.5*1.5+.5*3:3;st='T2 hit';break}
+  if(h1&&isFinite(E12[j]))cs=sg>0?Math.max(cs,Math.min(E12[j],b.l)):Math.min(cs,Math.max(E12[j],b.h))}
+ return{entry,stop,t1,t2,risk,st,h1,trail:cs,R}}
+// position size from the Account / Risk % boxes in the header
+function sizeTxt(lv){const a=+($('acct')||{}).value||0,rp=+($('rpct')||{}).value||0;if(!(a>0&&rp>0&&lv.risk>0))return'';
+ const sh=Math.floor(a*rp/100/lv.risk);return sh>0?` · ${sh} sh ($${Math.round(sh*lv.entry).toLocaleString()})`:''}
 function lvLines(ser,lv){const mk=(price,color,title)=>ser.createPriceLine({price,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});
- return[mk(lv.entry,'#607d8b','Entry'),mk(lv.stop,'#e5252a','Stop'),mk(lv.t1,'#00b34a','T1 1.5R'),mk(lv.t2,'#007a33','T2 3R')]}
+ return[mk(lv.entry,'#607d8b','Entry'+sizeTxt(lv)),mk(lv.h1?lv.trail:lv.stop,'#e5252a',lv.h1?'Trail':'Stop'),mk(lv.t1,'#00b34a','T1 1.5R'),mk(lv.t2,'#007a33','T2 3R')]}
 let lvMain=[];
 function drawLvMain(){try{lvMain.forEach(l=>candle.removePriceLine(l))}catch(e){}lvMain=[];
  const g=SGC.get(SYM);if(!$('slv').checked||!$('sig').checked||!g||!g.list.length)return;
@@ -1213,7 +1256,7 @@ function schDraw(){
   const le=r.ev&&r.ev[r.ev.length-1];
   if(le&&$('spl').checked){const lv=tradeLevels(bars,le,atr(bars));
    if(lv){lvLines(SCH.cs,lv).forEach(l=>SCH.pl.push(l));const sg=le.side==='buy'?1:-1;
-    lvTxt=` · risk ${fm(lv.risk/lv.entry*100,2)}% · now ${fm((r.px-lv.entry)*sg/lv.risk,1)}R · <b>${lv.st}</b>`}}
+    lvTxt=` · risk ${fm(lv.risk/lv.entry*100,2)}%${sizeTxt(lv)} · now ${fm((r.px-lv.entry)*sg/lv.risk,1)}R · <b>${lv.st}</b>`}}
   const key=SC.sel+'|'+tf;if(SCH.key!==key){SCH.key=key;SCH.c.priceScale('right').applyOptions({autoScale:true});const e=rw.length-1+6;SCH.c.timeScale().setVisibleLogicalRange({from:Math.max(-2,e-Math.max(120,(+$('sb').value||10)*8)),to:e})}
   const last=r.ev&&r.ev[r.ev.length-1],chg=Q[SC.sel];
   $('sphs').textContent=SC.sel;
@@ -1248,6 +1291,7 @@ $('sflt').onchange=()=>{store.set('csflt',$('sflt').value);sigRecalc()};
 $('sgap').onchange=()=>{store.set('csgap',$('sgap').value);sigRecalc()};
 {const g=store.get('cscd');if(g!==null&&g!==''&&isFinite(g))$('scd').value=g}
 $('scd').onchange=()=>{store.set('cscd',$('scd').value);sigRecalc()};
+['acct','rpct'].forEach(i=>{const v=store.get('c_'+i);if(v!==null&&v!==''&&isFinite(v))$(i).value=v;$(i).onchange=()=>{store.set('c_'+i,$(i).value);drawLvMain();schDraw()}});
 let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTimer=setInterval(()=>{if(!document.hidden)scan()},60000)};
 
 // ---------- export / import drawings + price alerts (JSON file) ----------
@@ -1288,6 +1332,102 @@ async function importDr(file){
  catch(e){flash('Import failed: '+e.message,1)}}
 $('dexp').onclick=exportDr;$('dimp').onclick=()=>{$('dfile').value='';$('dfile').click()};$('dfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)importDr(f)};
 
+
+// ================= OPTIONS TAB =================
+// For every watchlist name (or the ★ Focus list): pull the option chain snapshot, keep contracts with DTE > N and volume > V,
+// then fetch each survivor's own 15-minute bars and keep it only if EMA(fast) > EMA(slow) on the latest 15m bar of the OPTION chart.
+// Snapshot volume = the contract's volume today; "Last 15m bar" mode checks the newest 15m bar's volume instead.
+const OP={res:[],bars:{},sel:'',sort:{k:'vol',dir:-1},busy:false,prev:new Set(),flt:'',view:[],o:null,st:null};
+const OCC=/^(.+?)(\d{6})([CP])(\d{8})$/;
+function occParse(s){const m=OCC.exec(s);if(!m)return null;return{root:m[1],exp:'20'+m[2].slice(0,2)+'-'+m[2].slice(2,4)+'-'+m[2].slice(4,6),type:m[3]==='C'?'call':'put',strike:+m[4]/1000}}
+const addD=(d,n)=>new Date(Date.parse(d)+n*864e5).toISOString().slice(0,10);
+const dteOf=exp=>Math.round((Date.parse(exp)-Date.parse(et(Date.now()/1e3).d))/864e5);
+const oLabel=r=>`${r.und} ${r.exp.slice(5,7)}/${r.exp.slice(8)} ${r.strike}${r.type==='call'?'C':'P'}`;
+function oOpts(){const n=(id,d,lo,hi)=>{const v=+$(id).value;return isFinite(v)&&$(id).value!==''?Math.min(hi,Math.max(lo,v)):d};
+ const fast=Math.round(n('oef',10,2,100)),slow=Math.round(n('oes',20,3,200));
+ return{type:$('otype').value,minD:Math.round(n('omind',7,0,365)),maxD:Math.round(n('omaxd',45,1,730)),minV:n('ominv',1000,0,1e9),vb:$('ovb').value,band:n('oband',20,0,100),fast:Math.min(fast,slow-1),slow,feed:$('ofeed').value}}
+const OIDS=['otype','omind','omaxd','ominv','ovb','oband','oef','oes','ofeed'];
+const saveO=()=>store.set('copt',JSON.stringify(OIDS.map(i=>$(i).value)));
+try{const v=JSON.parse(store.get('copt')||'[]');OIDS.forEach((i,k)=>{if(v[k]!=null&&v[k]!==''){const old=$(i).value;$(i).value=v[k];if($(i).value===''&&$(i).tagName==='SELECT')$(i).value=old}})}catch(e){}
+OIDS.forEach(i=>$(i).onchange=saveO);
+async function optSnaps(und,px,o){
+ const out={},t0=et(Date.now()/1e3).d,q=['feed='+o.feed,'limit=1000','expiration_date_gte='+addD(t0,o.minD+1),'expiration_date_lte='+addD(t0,o.maxD)];
+ if(o.type!=='both')q.push('type='+o.type);
+ if(o.band>0&&px)q.push('strike_price_gte='+(px*(1-o.band/100)).toFixed(2),'strike_price_lte='+(px*(1+o.band/100)).toFixed(2));
+ let tok='',pg=0;
+ do{const j=await getRetry(`https://data.alpaca.markets/v1beta1/options/snapshots/${encodeURIComponent(und)}?${q.join('&')}`+(tok?`&page_token=${tok}`:''));
+  Object.assign(out,j.snapshots||{});tok=j.next_page_token;pg++}while(tok&&pg<8);
+ return out}
+async function optBars(syms,start){const by={};let tok='';
+ do{const j=await getRetry(`https://data.alpaca.markets/v1beta1/options/bars?symbols=${syms.map(encodeURIComponent).join(',')}&timeframe=15Min&start=${start}&limit=10000&sort=asc`+(tok?`&page_token=${tok}`:''));
+  for(const k in(j.bars||{}))(by[k]=by[k]||[]).push(...j.bars[k]);tok=j.next_page_token}while(tok);return by}
+async function oscan(){
+ if(OP.busy)return;if(!hasKey()){$('kd').open=true;$('omsg').textContent='Add keys or a proxy URL first.';return}
+ OP.busy=true;$('orun').disabled=true;$('omsg').className='';const T0=performance.now(),errs=[];
+ try{const o=oOpts();saveO();OP.o=o;const ws=[...new Set(act())];if(!ws.length)throw new Error('Watchlist is empty.');
+  if(o.band>0&&!Object.keys(Q).length){$('omsg').textContent='Getting stock prices…';await quotes()}
+  const cand=[];let nsn=0;
+  await pool(ws.map(k=>async()=>{try{const px=Q[k]&&Q[k].p,sn=await optSnaps(k,px,o);
+    for(const sy in sn){nsn++;const x=sn[sy],pr=occParse(sy);if(!pr)continue;const v=x.dailyBar&&x.dailyBar.v;if(!(v>o.minV))continue;
+     cand.push({sym:sy,und:k,...pr,dte:dteOf(pr.exp),vol:v,snap:x})}}catch(e){errs.push(k+': '+String(e.message).slice(0,70))}}),4,(d,t)=>{$('omsg').textContent=`Reading option chains… ${d}/${t}`});
+  cand.sort((a,b)=>b.vol-a.vol);const top=cand.slice(0,400),ch=[];
+  for(let i=0;i<top.length;i+=40)ch.push(top.slice(i,i+40).map(c=>c.sym));
+  const st=new Date(Date.now()-8*864e5).toISOString();
+  await pool(ch.map(g=>async()=>{try{const by=await optBars(g,st);g.forEach(k=>{OP.bars[k]=by[k]||[]})}catch(e){errs.push('bars: '+String(e.message).slice(0,70))}}),4,(d,t)=>{$('omsg').textContent=`Reading 15m option bars… ${d}/${t}`});
+  const res=[];
+  top.forEach(c=>{const b=OP.bars[c.sym]||[];if(b.length<o.slow)return;
+   const cl=b.map(x=>x.c),ef=ema(cl,o.fast),es=ema(cl,o.slow),n=b.length-1;
+   if(!(ef[n]>es[n]))return;if(o.vb==='bar'&&!(b[n].v>o.minV))return;
+   let k=n;while(k>=0&&ef[k]>es[k])k--;
+   const sn=c.snap,lq=sn.latestQuote||{},lt=sn.latestTrade||{},bp=lq.bp,ap=lq.ap,mid=bp>0&&ap>0?(bp+ap)/2:null;
+   res.push({...c,n,last:lt.p!=null?lt.p:b[n].c,bp,ap,spr:mid?(ap-bp)/mid*100:null,delta:sn.greeks?sn.greeks.delta:null,iv:sn.impliedVolatility,
+    ef:ef[n],es:es[n],gap:(ef[n]/es[n]-1)*100,ago:n-k-1,lastT:b[n].t,bv:b[n].v})});
+  const first=OP.prev.size===0&&!OP.st;res.forEach(r=>{r.isNew=!first&&!OP.prev.has(r.sym)});
+  OP.prev=new Set(res.map(r=>r.sym));OP.res=res;OP.st={und:ws.length,snaps:nsn,vol:cand.length,capped:cand.length>top.length,ema:res.length};
+  if(OP.sel&&!res.some(r=>r.sym===OP.sel))OP.sel='';
+  renderO();
+  $('omsg').textContent=`${ws.length} underlyings · ${nsn} contracts read · ${cand.length} pass volume${OP.st.capped?' (top 400 checked)':''} · ${res.length} pass EMA ${o.fast}>${o.slow} · ${((performance.now()-T0)/1000).toFixed(1)}s`+(errs.length?' · issues: '+errs.slice(0,3).join('; '):'');
+  if(errs.length)$('omsg').className='err'
+ }catch(e){$('omsg').textContent=e.message;$('omsg').className='err'}finally{OP.busy=false;$('orun').disabled=false}}
+function renderO(){
+ const o=OP.o||oOpts(),all=OP.res,rs0=OP.flt?all.filter(r=>r.und===OP.flt):all,sk=OP.sort.k;
+ const rs=sk?[...rs0].sort((a,b)=>OP.sort.dir*((a[sk]==null?-1e9:a[sk])-(b[sk]==null?-1e9:b[sk]))):rs0;OP.view=rs;
+ const st=OP.st;
+ $('oreg').innerHTML=st?chip('Underlyings',st.und)+chip('Contracts read',st.snaps)+chip('Volume > '+o.minV,st.vol)+chip(`EMA ${o.fast}>${o.slow} (15m)`,all.length,all.length?'up':'')+chip('DTE','> '+o.minD)+(OP.flt?`<span class="chip" style="cursor:pointer" data-clr="1"><i>Filter</i>${OP.flt} ✕</span>`:''):'';
+ const p=v=>v==null?'–':fm(v,v<10?2:2);
+ $('otab').innerHTML=rs.length?`<thead><tr><th data-sort="und">Underlying</th><th>Contract</th><th data-sort="last">Last</th><th>Bid / Ask</th><th data-sort="spr" title="Bid-ask spread as % of mid. Wide spreads are hard to trade">Spr %</th><th data-sort="vol" title="Contract volume today">Vol</th><th data-sort="bv" title="Volume of the newest 15m bar">15m Vol</th><th data-sort="delta">Δ</th><th data-sort="iv" title="Implied volatility">IV %</th><th data-sort="dte">DTE</th><th data-sort="ef">EMA ${o.fast}</th><th data-sort="es">EMA ${o.slow}</th><th data-sort="gap" title="Fast EMA above slow EMA, in %">Gap %</th><th data-sort="ago" title="15m bars since fast EMA crossed above slow (0 = latest bar)">Cross ago</th><th>Last bar (ET)</th><th></th></tr></thead><tbody>`+
+  rs.map(r=>`<tr data-s="${r.sym}" class="${r.sym===OP.sel?'on':''}"><td><b>${r.und}</b>${r.isNew?' <span class="up" title="New since the last scan">●new</span>':''}</td><td>${oLabel(r)}</td><td>${p(r.last)}</td><td>${p(r.bp)} / ${p(r.ap)}</td><td class="${r.spr!=null&&r.spr>15?'dn':''}">${r.spr==null?'–':fm(r.spr,1)}</td><td><b>${r.vol.toLocaleString()}</b></td><td>${r.bv.toLocaleString()}</td><td>${r.delta==null?'–':fm(r.delta,2)}</td><td>${r.iv==null?'–':fm(r.iv*100,0)}</td><td>${r.dte}</td><td>${p(r.ef)}</td><td>${p(r.es)}</td><td class="up">+${fm(r.gap,1)}</td><td>${r.ago===0?'now':r.ago}</td><td>${new Date(r.lastT).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td><button class="op" data-o="${r.und}" title="Open the underlying in Chart">↗</button></td></tr>`).join('')+'</tbody>'
+  :'<tbody><tr><td class="hint" style="padding:14px">'+(st?'No contracts pass all filters. Try a lower volume, a wider strike range, or a higher Max DTE.':'Press Scan.')+'</td></tr></tbody>';
+ odraw()}
+let OCH=null;
+function ochInit(){if(OCH)return;
+ const c=LightweightCharts.createChart($('och'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:11},
+  grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:'#e3e6ec',autoScale:true,scaleMargins:{top:.1,bottom:.1}},
+  timeScale:{borderColor:'#e3e6ec',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0}});
+ const ln=(color,w)=>c.addLineSeries({color,lineWidth:w,priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false});
+ OCH={c,cs:c.addCandlestickSeries({priceLineVisible:true,lastValueVisible:true,borderVisible:true}),f:ln('#2962ff',2),s:ln('#ff9800',2),key:''}}
+function odraw(){const pn=$('opanel'),r=OP.res.find(x=>x.sym===OP.sel),b=r&&OP.bars[r.sym];
+ if(!r||!b||b.length<2){pn.classList.add('hid');return}
+ pn.classList.remove('hid');ochInit();
+ const o=OP.o||oOpts(),tm=b.map(x=>{const t=Date.parse(x.t)/1e3;return t+et(t).sh}),cl=b.map(x=>x.c),ef=ema(cl,o.fast),es=ema(cl,o.slow);
+ OCH.cs.setData(b.map((x,i)=>({time:tm[i],open:x.o,high:x.h,low:x.l,close:x.c})));
+ OCH.f.setData(tm.map((t,i)=>({time:t,value:ef[i]})));OCH.s.setData(tm.map((t,i)=>({time:t,value:es[i]})));
+ if(OCH.key!==r.sym){OCH.key=r.sym;OCH.c.priceScale('right').applyOptions({autoScale:true});OCH.c.timeScale().fitContent()}
+ $('ophs').textContent=oLabel(r);
+ $('ophi').innerHTML=`15m · <span style="color:#2962ff">EMA ${o.fast}</span> / <span style="color:#ff9800">EMA ${o.slow}</span> · last ${fm(r.last,2)} · vol ${r.vol.toLocaleString()} · ${r.dte} DTE`+(r.delta!=null?` · Δ ${fm(r.delta,2)}`:'')}
+function onav(d){const k=OP.view.map(r=>r.sym);if(!k.length)return;const i=k.indexOf(OP.sel);OP.sel=k[(i<0?0:i+d+k.length)%k.length];renderO();const el=document.querySelector('#otab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
+$('otab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(OP.sort.k!==k)OP.sort={k,dir:-1};else if(OP.sort.dir<0)OP.sort.dir=1;else OP.sort={k:'',dir:-1};renderO();return}
+ const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){OP.sel=r.dataset.s;renderO()}};
+$('oreg').onclick=e=>{if(e.target.closest('[data-clr]')){OP.flt='';renderO()}};
+$('opx').onclick=()=>{OP.sel='';renderO()};$('oprev').onclick=()=>onav(-1);$('onext').onclick=()=>onav(1);
+$('oopen').onclick=()=>{const r=OP.res.find(x=>x.sym===OP.sel);if(r)openChart(r.und)};
+$('orun').onclick=oscan;
+$('oexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ const h=['Underlying','Contract','OCC_symbol','Type','Strike','Expiry','DTE','Last','Bid','Ask','Spread_pct','Volume_today','Volume_last_15m','Delta','IV','EMA_fast','EMA_slow','Gap_pct','Cross_bars_ago','Last_bar_UTC'];
+ const L=[h,...OP.view.map(r=>[r.und,oLabel(r),r.sym,r.type,r.strike,r.exp,r.dte,r.last,r.bp,r.ap,r.spr==null?'':r.spr.toFixed(2),r.vol,r.bv,r.delta,r.iv,r.ef.toFixed(4),r.es.toFixed(4),r.gap.toFixed(2),r.ago,r.lastT])].map(x=>x.map(q).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download='cytocine-options-scan.csv';a.click()};
+let oTimer;$('oauto').onchange=e=>{clearInterval(oTimer);if(e.target.checked)oTimer=setInterval(()=>{if(!document.hidden&&tab==='O')oscan()},60000)};
+
 // ---------- wiring + restore saved settings ----------
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
 $('zi').onclick=()=>zoom(.7);$('zo').onclick=()=>zoom(1/.7);$('zf').onclick=zfit;
@@ -1307,7 +1447,7 @@ magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
 $('bo').checked=store.get('cb')==='1';
 setSync(syncOn()?'ready':'local only');setTool('sel');msetTool('sel');mdrawVis(store.get('mdr')===null?!matchMedia('(max-width:720px)').matches:store.get('mdr')!=='0');setLay(+store.get('mlay')===2?2:1);syncToggles();focusUI();renderWL();
 if(hasKey()){load();quotes();trends()}else $('kd').open=true;
-{const t0=store.get('ctab');if(['M','S'].includes(t0))setTab(t0)}
+{const t0=store.get('ctab');if(['M','S','O'].includes(t0))setTab(t0)}
 wsConnect();
 </script>
 <script>
