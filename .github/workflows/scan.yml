@@ -4,15 +4,21 @@ on:
   schedule:
     - cron: '2,32 13-21 * * 1-5'
   workflow_dispatch:
+    inputs:
+      test:
+        description: 'Send a test alert to Discord/ntfy'
+        type: choice
+        default: '0'
+        options: ['0', '1']
 permissions:
   contents: write
 jobs:
   scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24 }
       - run: node scanner.mjs
         env:
           ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
@@ -22,6 +28,7 @@ jobs:
           ACCT: '25000'
           RISK_PCT: '0.5'
           MAX_POS_PCT: '25'
+          TEST_ALERT: ${{ inputs.test }}
           TF: '1Hour'       # 30Min | 1Hour
           FILTER: 'cloud'   # off | rise | cloud: must match the app's Signal filter dropdown
           GAP_ATR: '0.1'
