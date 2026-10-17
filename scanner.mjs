@@ -27,15 +27,16 @@ async function bars(syms){const by={},H={'APCA-API-KEY-ID':KEY,'APCA-API-SECRET-
   const res=await fetch(u,{headers:H});if(!res.ok)throw new Error(res.status+' '+(await res.text()).slice(0,200));const j=await res.json();
   for(const k in(j.bars||{}))(by[k]=by[k]||[]).push(...j.bars[k]);tok=j.next_page_token}while(tok);return by}
 const SENT='sent.json';let sent={};try{sent=JSON.parse(fs.readFileSync(SENT,'utf8'))}catch{}
-const now=Date.now(),msgs=[];
+const now=Date.now(),msgs=[];let got=0,inBuy=0,inSell=0,newest='';
 for(let i=0;i<WL.length;i+=14){const by=await bars(WL.slice(i,i+14));
  for(const k in by){let r=by[k];if(now<Date.parse(r[r.length-1].t)+BAR)r=r.slice(0,-1); // drop the still-forming bar: closed bars only
+  got++;{const x=cond(r)[r.length-1];if(x&&x.buy)inBuy++;if(x&&x.sell)inSell++}if(r.length&&r[r.length-1].t>newest)newest=r[r.length-1].t;
   const ev=signals(r),e=ev[ev.length-1];if(!e)continue;const close=Date.parse(r[e.i].t)+BAR;if(now-close>2*BAR)continue;
   const key=`${k}|${e.side}|${r[e.i].t}`;if(sent[key])continue;sent[key]=now;const p=plan(r,e);
   msgs.push(`${e.side.toUpperCase()} ${k} (${TF} bar closed) entry ${e.px.toFixed(2)} stop ${p.stop.toFixed(2)} T1 ${p.t1.toFixed(2)} T2 ${p.t2.toFixed(2)} · ${p.sh} sh, risk $${Math.round(p.risk)}`)}}
 for(const k of Object.keys(sent))if(now-sent[k]>3*864e5)delete sent[k];
 fs.writeFileSync(SENT,JSON.stringify(sent));
-console.log(`${WL.length} symbols scanned, ${msgs.length} new signals`);msgs.forEach(m=>console.log(m));
+console.log(`${new Date().toISOString()} | ${TF} | filter ${FLT} | ${got}/${WL.length} symbols had bars | newest closed bar ${newest||'none'} | ${inBuy} in BUY state, ${inSell} in SELL state | ${msgs.length} NEW signals`);if(!got)console.log('WARNING: no bars returned. Check keys, feed, or whether the market was open.');msgs.forEach(m=>console.log(m));
 if(msgs.length){const text=msgs.join('\n');
  if(E.DISCORD_WEBHOOK)await fetch(E.DISCORD_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'Cytocine Cloud',content:text.slice(0,1900)})});
  if(E.NTFY_TOPIC)await fetch('https://ntfy.sh/'+E.NTFY_TOPIC,{method:'POST',headers:{Title:'Cytocine signal'},body:text})}
