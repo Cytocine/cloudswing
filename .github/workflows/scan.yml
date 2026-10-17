@@ -28,6 +28,7 @@ jobs:
           ACCT: '25000'
           RISK_PCT: '0.5'
           MAX_POS_PCT: '25'
+          HEARTBEAT: 'every'   # every | daily | off : message even when there are no hits
           TEST_ALERT: ${{ inputs.test }}
           TF: '1Hour'       # 30Min | 1Hour
           FILTER: 'cloud'   # off | rise | cloud: must match the app's Signal filter dropdown
