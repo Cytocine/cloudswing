@@ -27,7 +27,7 @@ body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style></head><body>
 <h1 class="sr">Cytocine + Gainers</h1>
-<nav id="bar" aria-label="Dashboards"><button id="bG" type="button" aria-pressed="true"><span aria-hidden="true">📈</span> Gainers</button><button id="bC" type="button" aria-pressed="false"><span aria-hidden="true">🧬</span> Cytocine</button><span class="sp"></span><small id="note"></small></nav>
+<nav id="bar" aria-label="Dashboards"><button id="bG" type="button" aria-pressed="true"><span aria-hidden="true">📈</span> Gainers</button><button id="bC" type="button" aria-pressed="false"><span aria-hidden="true">🧬</span> Cytocine</button><button id="bP" type="button" aria-pressed="false"><span aria-hidden="true">💼</span> Portfolio</button><span class="sp"></span><small id="note"></small></nav>
 <div id="host"><div id="load" role="status" aria-live="polite">Loading dashboard…</div></div>
 <noscript><p style="padding:16px">This dashboard needs JavaScript.</p></noscript>
 <script type="text/plain" id="appG"><!DOCTYPE html>
@@ -1715,7 +1715,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <input id="sn" type="hidden" value="0.5">
    <label>Show <select id="sf"><option value="4">All 4 met now</option><option value="3">3 or more now</option><option value="all">All symbols</option><option value="sig" selected>BUY or SELL in last N bars</option><option value="buy">BUY only in last N bars</option><option value="sell">SELL only in last N bars</option></select></label>
    <label title="Candle size the scanner uses for the BUY/SELL rules">Timeframe <select id="stf"><option value="5Min">5m</option><option value="15Min">15m</option><option value="30Min" selected>30m</option><option value="1Hour">1h</option></select></label>
-   <label title="Number of bars (of the chosen timeframe) to look back for BUY/SELL signals">Last N bars <input id="sb" type="number" min="1" max="200" value="10" style="width:56px"></label>
+   <label title="Number of bars (of the chosen timeframe) to look back for BUY/SELL signals">Last N bars <input id="sb" type="number" min="1" max="200" value="5" style="width:56px"></label>
    <label title="Show only signals that pass at least this many of the 6 entry-quality checks (Q column)"><input type="checkbox" id="sq">High quality only</label><label title="Minimum Q score (out of 6)">Min Q <input id="sqm" type="number" min="1" max="6" step="1" value="4" style="width:46px"></label>
    <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><button id="strk" title="Every signal in the loaded history with its simulated result, split into trades you took and ones you skipped">📊 Tracker</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
@@ -2746,7 +2746,8 @@ function setScanTF(tf,rescan){const c=STFS[tf]||STFS['30Min'];tf=STFS[tf]?tf:'30
  SC.tfs=[[c[0],tf,c[1]]];$('stf').value=tf;SC.prev={};
  if(rescan&&SC.raw&&hasKey())scan();}
 $('stf').onchange=()=>{store.set('cstf',$('stf').value);setScanTF($('stf').value,true)};
-setScanTF(store.get('cstf')||'30Min',false);
+if(store.get('c1h5')!=='1'){store.set('cstf','1Hour');let v=[];try{v=JSON.parse(store.get('csf3')||'[]')}catch(e){}if(!Array.isArray(v))v=[];store.set('csf3',JSON.stringify([v[0]||'0.5',v[1]||'sig','5']));store.set('c1h5','1')} // one-time: scanner defaults to 1h, last 5 bars
+setScanTF(store.get('cstf')||'1Hour',false);
 function snav(d){const k=(SC.view||SC.res).map(r=>r.sym);if(!k.length)return;const i=k.indexOf(SC.sel);SC.sel=k[(i<0?0:i+d+k.length)%k.length];renderS();const el=document.querySelector('#stab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
 $('stab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(SC.sort.k!==k)SC.sort={k,dir:-1};else if(SC.sort.dir<0)SC.sort.dir=1;else SC.sort={k:'',dir:-1};renderS();return}
  const b=e.target.closest('[data-o]');if(b){openChart(b.dataset.o);return}const r=e.target.closest('tr[data-s]');if(r){SC.sel=r.dataset.s;renderS()}};
@@ -3114,6 +3115,117 @@ function fix(){q=0;document.querySelectorAll('button[title]:not([aria-label])').
 new MutationObserver(()=>{if(!q)q=setTimeout(fix,150)}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});fix()})();
 </scr⁣ipt></body></html>
 </script>
+<script type="text/plain" id="appP"><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></scr⁣ipt>
+<style>
+:root{color-scheme:dark;--bg:#10151c;--pn:#171e28;--bd:#2a3340;--tx:#d7dde6;--mu:#8f9bab;--ac:#2962ff;--up:#2fd3a0;--dn:#ff6b6b}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;flex-direction:column}
+header,#add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--pn)}
+button,input,select{font:inherit;color:var(--tx);background:#1b2330;border:1px solid var(--bd);border-radius:6px;padding:5px 8px;min-height:32px}
+button{cursor:pointer}button.p{background:var(--ac);border-color:var(--ac)}
+.chip{padding:2px 9px;border:1px solid var(--bd);border-radius:999px;background:#1b2330;font-variant-numeric:tabular-nums}.chip i{font-style:normal;color:var(--mu);margin-right:5px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+#wrap{flex:1;min-height:120px;overflow:auto}
+table{border-collapse:collapse;width:100%}th{position:sticky;top:0;background:var(--pn);text-align:left;color:var(--mu);font-weight:600;padding:5px 6px;white-space:nowrap}
+td{padding:3px 6px;border-bottom:1px solid var(--bd);white-space:nowrap;font-variant-numeric:tabular-nums}
+td input,td select{padding:3px 5px;min-height:28px}tr.on td{background:#1d2a44}tr[data-id]{cursor:pointer}.sym{font-size:14px}
+#cw{display:none;position:relative;height:40%;min-height:230px;border-top:2px solid var(--ac)}#chart{position:absolute;inset:22px 0 0 0}
+#cm{position:absolute;top:2px;left:8px;color:var(--mu);font-size:12px;z-index:2}
+#msg{padding:4px 10px;color:var(--mu);font-size:12px;min-height:24px;border-top:1px solid var(--bd)}#msg.err{color:var(--dn)}
+.hid{display:none}
+</style></head><body>
+<header>
+ <b>💼 Portfolio</b>
+ <select id="impsrc" title="Pull symbols or trade plans from the Cytocine tab"><option value="">Import from Cytocine…</option><option value="wl">Watchlist symbols</option><option value="fav">★ Starred symbols</option><option value="sig">Latest scan signals (with entry/stop/targets)</option></select>
+ <button id="exp" title="Download all positions as portfolio.json">⬇ Export JSON</button><button id="imp" title="Load a portfolio.json (matching ids are updated, others added)">⬆ Import JSON</button><input type="file" id="file" accept=".json,application/json" class="hid">
+ <button id="ref">↻ Prices</button><button id="clr">Clear all</button>
+ <span id="sum" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+</header>
+<div id="add">
+ <input id="a_sym" placeholder="Symbol" style="width:84px;text-transform:uppercase">
+ <select id="a_state"><option value="open">Open</option><option value="planned">Planned</option><option value="watch">Watch</option></select>
+ <select id="a_side"><option value="long">Long</option><option value="short">Short</option></select>
+ <input id="a_sh" type="number" step="any" placeholder="Shares" style="width:78px"><input id="a_en" type="number" step="any" placeholder="Entry" style="width:78px"><input id="a_st" type="number" step="any" placeholder="Stop" style="width:78px"><input id="a_t1" type="number" step="any" placeholder="T1 (auto 1.5R)" style="width:110px"><input id="a_t2" type="number" step="any" placeholder="T2 (auto 3R)" style="width:110px">
+ <button class="p" id="a_go">+ Add</button>
+</div>
+<div id="wrap"><table><thead><tr><th>Symbol</th><th>State</th><th>Side</th><th>Shares</th><th>Entry</th><th>Stop</th><th>T1</th><th>T2</th><th>Exit</th><th>Last</th><th>P&amp;L</th><th>R</th><th>Risk</th><th>Alert</th><th>Note</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+<div id="cw"><span id="cm"></span><div id="chart"></div></div>
+<div id="msg" role="status">Click a row to see its chart with entry, stop and targets. Prices come from your Alpaca keys saved in the Cytocine tab.</div>
+<script>
+const $=id=>document.getElementById(id);
+const ls={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
+const STS=['watch','planned','open','closed'],NUM=['shares','entry','stop','t1','t2','exit'];
+const n=v=>{v=parseFloat(v);return isFinite(v)?v:null},f=(x,d=2)=>x==null||!isFinite(x)?'–':x.toFixed(d),cls=v=>v>0?'up':v<0?'dn':'';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+function norm(x){return{id:x.id||uid(),sym:String(x.sym).toUpperCase().trim(),side:x.side==='short'?'short':'long',state:STS.includes(x.state)?x.state:'watch',shares:n(x.shares),entry:n(x.entry),stop:n(x.stop),t1:n(x.t1),t2:n(x.t2),exit:n(x.exit),note:String(x.note||''),src:x.src||''}}
+let P=[],px={},sel='';try{P=JSON.parse(ls.get('pf1')||'[]').map(norm)}catch{}
+const save=()=>ls.set('pf1',JSON.stringify(P));
+const msg=(t,e)=>{$('msg').textContent=t;$('msg').className=e?'err':''};
+function calc(p){const s=p.side==='short'?-1:1,L=px[p.sym],ref=p.state==='closed'?p.exit:L;
+ const risk=p.stop!=null&&p.entry!=null&&p.shares?Math.abs(p.entry-p.stop)*p.shares:null;
+ const pnl=(p.state==='open'||p.state==='closed')&&ref!=null&&p.entry!=null?(ref-p.entry)*s*(p.shares||0):null;let flag='';
+ if(p.state==='open'&&L!=null){if(p.stop!=null&&(L-p.stop)*s<=0)flag='STOP HIT?';else if(p.t2!=null&&(L-p.t2)*s>=0)flag='T2 reached';else if(p.t1!=null&&(L-p.t1)*s>=0)flag='T1 reached'}
+ return{L,risk,pnl,r:pnl!=null&&risk?pnl/risk:null,flag}}
+function render(){let oR=0,oP=0,cP=0,oN=0;
+ $('tb').innerHTML=P.map(p=>{const c=calc(p);if(p.state==='open'){oN++;oR+=c.risk||0;oP+=c.pnl||0}if(p.state==='closed')cP+=c.pnl||0;
+  const inp=(k,w)=>`<input data-id="${p.id}" data-k="${k}" type="number" step="any" value="${p[k]??''}" style="width:${w||74}px">`,
+   sl=(k,o)=>`<select data-id="${p.id}" data-k="${k}">${o.map(v=>`<option value="${v}"${p[k]===v?' selected':''}>${v}</option>`).join('')}</select>`;
+  return`<tr data-id="${p.id}" class="${p.id===sel?'on':''}"><td><b class="sym">${esc(p.sym)}</b></td><td>${sl('state',STS)}</td><td>${sl('side',['long','short'])}</td><td>${inp('shares',66)}</td><td>${inp('entry')}</td><td>${inp('stop')}</td><td>${inp('t1')}</td><td>${inp('t2')}</td><td>${p.state==='closed'?inp('exit'):''}</td><td>${f(c.L)}</td><td class="${cls(c.pnl)}">${c.pnl==null?'–':'$'+f(c.pnl,0)}</td><td class="${cls(c.r)}">${c.r==null?'–':f(c.r,1)+'R'}</td><td>${c.risk==null?'–':'$'+f(c.risk,0)}</td><td class="${c.flag.startsWith('STOP')?'dn':'up'}"><b>${c.flag}</b></td><td><input data-id="${p.id}" data-k="note" type="text" value="${esc(p.note)}" style="width:170px"></td><td><button data-del="${p.id}" title="Delete">✕</button></td></tr>`}).join('')||'<tr><td colspan="16" style="padding:16px;color:var(--mu)">No positions yet. Add one above, or use Import from Cytocine.</td></tr>';
+ const ch=(a,b,c)=>`<span class="chip"><i>${a}</i><span class="${c||''}">${b}</span></span>`;
+ $('sum').innerHTML=ch('Open',oN)+ch('Open risk','$'+f(oR,0))+ch('Open P&L',(oP>=0?'+':'')+'$'+f(oP,0),cls(oP))+ch('Closed P&L',(cP>=0?'+':'')+'$'+f(cP,0),cls(cP))}
+function keys(){return{k:ls.get('ck')||ls.get('alpKey'),s:ls.get('cs')||ls.get('alpSec'),feed:ls.get('cf')||'iex'}}
+async function api(u){const K=keys();if(!K.k||!K.s)throw new Error('Add your Alpaca keys in the Cytocine tab first');const r=await fetch(u,{headers:{'APCA-API-KEY-ID':K.k,'APCA-API-SECRET-KEY':K.s}});if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,120));return r.json()}
+async function quotes(){const S=[...new Set(P.map(p=>p.sym))];if(!S.length)return;
+ try{const j=await api(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${S.join(',')}&feed=${keys().feed}`),s=j.snapshots||j;
+  S.forEach(k=>{const x=s[k];if(x){const v=(x.latestTrade&&x.latestTrade.p)||(x.minuteBar&&x.minuteBar.c)||(x.dailyBar&&x.dailyBar.c);if(v)px[k]=v}});
+  msg('Prices updated '+new Date().toLocaleTimeString());render()}catch(e){msg(e.message,1)}}
+let ch,cs,lines=[];
+async function loadChart(){const p=P.find(x=>x.id===sel),w=$('cw');if(!p){w.style.display='none';return}w.style.display='block';
+ if(!window.LightweightCharts){$('cm').textContent='Chart library did not load (offline?)';return}
+ if(!ch){ch=LightweightCharts.createChart($('chart'),{autoSize:true,layout:{background:{color:'#10151c'},textColor:'#d7dde6'},grid:{vertLines:{color:'#1b2330'},horzLines:{color:'#1b2330'}},timeScale:{timeVisible:true},rightPriceScale:{borderColor:'#2a3340'}});
+  cs=ch.addCandlestickSeries({upColor:'#2fd3a0',downColor:'#ff6b6b',borderVisible:false,wickUpColor:'#2fd3a0',wickDownColor:'#ff6b6b'})}
+ $('cm').textContent=p.sym+' · 1h · loading…';
+ try{const st=new Date(Date.now()-25*864e5).toISOString(),j=await api(`https://data.alpaca.markets/v2/stocks/bars?symbols=${p.sym}&timeframe=1Hour&start=${st}&limit=1000&adjustment=split&sort=asc&feed=${keys().feed}`);
+  if(sel!==p.id)return;cs.setData((j.bars&&j.bars[p.sym]||[]).map(b=>({time:Math.floor(Date.parse(b.t)/1e3),open:b.o,high:b.h,low:b.l,close:b.c})));
+  lines.forEach(l=>cs.removePriceLine(l));lines=[];
+  [[p.entry,'#8fa3bf','Entry'],[p.stop,'#ff6b6b','Stop'],[p.t1,'#2fd3a0','T1'],[p.t2,'#14a37f','T2']].forEach(([v,c,t])=>{if(v!=null)lines.push(cs.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:2,axisLabelVisible:true,title:t}))});
+  $('cm').textContent=p.sym+' · 1h · dashed lines = entry / stop / targets';ch.timeScale().fitContent()}catch(e){$('cm').textContent=e.message}}
+$('tb').addEventListener('change',e=>{const t=e.target,id=t.dataset.id,k=t.dataset.k,p=P.find(x=>x.id===id);if(!p||!k)return;
+ const L=[...$('tb').querySelectorAll('input,select')],ai=L.indexOf(document.activeElement);
+ p[k]=NUM.includes(k)?n(t.value):t.value;save();render();if(ai>=0){const L2=$('tb').querySelectorAll('input,select');if(L2[ai])L2[ai].focus()}if(id===sel)loadChart()});
+$('tb').addEventListener('click',e=>{const d=e.target.closest('[data-del]');
+ if(d){const p=P.find(x=>x.id===d.dataset.del);if(p&&confirm('Delete '+p.sym+' from the portfolio?')){P=P.filter(x=>x!==p);if(sel===p.id)sel='';save();render();loadChart()}return}
+ if(e.target.closest('input,select,button'))return;const tr=e.target.closest('tr[data-id]');if(tr){sel=tr.dataset.id;render();loadChart()}});
+$('a_go').onclick=()=>{const sym=$('a_sym').value.trim().toUpperCase();if(!sym){msg('Enter a symbol',1);return}
+ const side=$('a_side').value,s=side==='short'?-1:1,en=n($('a_en').value),st=n($('a_st').value);let t1=n($('a_t1').value),t2=n($('a_t2').value);
+ if(en!=null&&st!=null){const r=Math.abs(en-st);if(t1==null)t1=en+s*1.5*r;if(t2==null)t2=en+s*3*r}
+ P.push(norm({sym,side,state:$('a_state').value,shares:n($('a_sh').value),entry:en,stop:st,t1,t2}));save();render();quotes();
+ ['a_sym','a_sh','a_en','a_st','a_t1','a_t2'].forEach(i=>$(i).value='');msg('Added '+sym)};
+$('a_sym').onkeydown=e=>{if(e.key==='Enter')$('a_go').click()};
+$('clr').onclick=()=>{if(P.length&&confirm('Delete all '+P.length+' positions?')){P=[];sel='';save();render();loadChart()}};
+$('ref').onclick=quotes;
+$('exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'cytocine-portfolio',version:1,exported:new Date().toISOString(),positions:P},null,1)],{type:'application/json'}));a.download='portfolio.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);msg('Exported '+P.length+' positions')};
+$('imp').onclick=()=>$('file').click();
+$('file').onchange=async e=>{const fl=e.target.files[0];if(!fl)return;
+ try{const j=JSON.parse(await fl.text()),arr=Array.isArray(j)?j:j.positions;if(!Array.isArray(arr))throw new Error('no positions found');let a=0,u=0;
+  arr.forEach(x=>{if(!x||!x.sym)return;const q=norm(x),i=P.findIndex(p=>p.id===q.id);if(i>=0){P[i]=q;u++}else{P.push(q);a++}});save();render();quotes();msg(`Imported: ${a} added, ${u} updated`)}
+ catch(er){msg('Import failed: '+er.message,1)}e.target.value=''};
+function cyto(){try{return parent.getCytocine&&parent.getCytocine()}catch{return null}}
+$('impsrc').onchange=()=>{const v=$('impsrc').value;$('impsrc').value='';if(!v)return;
+ if(v==='wl'||v==='fav'){let L=[];try{L=JSON.parse(ls.get(v==='wl'?'cw':'cfav')||'[]')}catch{}let a=0;
+  L.forEach(s=>{if(typeof s==='string'&&s&&!P.some(p=>p.sym===s)){P.push(norm({sym:s,state:'watch'}));a++}});save();render();quotes();msg(a?`Added ${a} symbol(s) as Watch`:'Nothing new to add');return}
+ let X;try{const C=cyto();X=C&&C.eval('({SC,TK,tradeLevels,atr,sharesFor,n:+document.getElementById("sb").value||5})')}catch{}
+ if(!X||!X.SC.res||!X.SC.res.length){msg('Open the Cytocine tab and run a Scan first, then come back and import.',1);return}
+ let a=0;X.SC.res.forEach(r=>{const bars=X.SC.raw&&X.SC.raw[r.sym];if(!bars||!r.ev||!r.ev.length)return;const e=r.ev[r.ev.length-1];if(r.n-1-e.i>=X.n)return;
+  const lv=X.tradeLevels(bars,e,X.atr(bars)),id='cy|'+r.sym+'|'+e.side+'|'+e.t;if(!lv||P.some(p=>p.id===id))return;
+  const taken=X.TK&&X.TK[r.sym+'|'+e.side+'|'+e.t];
+  P.push(norm({id,sym:r.sym,side:e.side==='buy'?'long':'short',state:taken?'open':'planned',shares:X.sharesFor(lv),entry:lv.entry,stop:lv.stop,t1:lv.t1,t2:lv.t2,note:'Cytocine '+(e.side==='buy'?'BUY ':'SELL ')+new Date(e.t).toLocaleString(),src:'cytocine'}));a++});
+ save();render();quotes();msg(a?`Imported ${a} signal plan(s) from the last ${X.n} scanned bars. Check shares and entry, then set State to Open once you are in.`:`No new signals in the last ${X.n} bars.`)};
+render();quotes();setInterval(()=>{if(!document.hidden)quotes()},30000);
+</scr⁣ipt></body></html>
+</script>
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
@@ -3123,7 +3235,8 @@ const dec=id=>$(id).textContent.replace(/^\n/,'').replace(/<\/(scr)\u2063(ipt)/g
 // Alpaca keys are stored under different names by each app; keep them in step.
 const PAIRS=[['alpKey','ck'],['alpSec','cs']];
 function syncKeys(){for(const[a,b]of PAIRS){const x=st.get(a),y=st.get(b);if(x&&!y)st.set(b,x);else if(y&&!x)st.set(a,y)}}
-const apps={G:{btn:$('bG'),id:'appG',fr:null,name:'Gainers'},C:{btn:$('bC'),id:'appC',fr:null,name:'Cytocine'}};
+const apps={G:{btn:$('bG'),id:'appG',fr:null,name:'Gainers'},C:{btn:$('bC'),id:'appC',fr:null,name:'Cytocine'},P:{btn:$('bP'),id:'appP',fr:null,name:'Portfolio'}};
+window.getCytocine=()=>apps.C.fr&&apps.C.fr.contentWindow; // lets the Portfolio tab import scan results
 const hd=Object.getOwnPropertyDescriptor(Document.prototype,'hidden'),vs=Object.getOwnPropertyDescriptor(Document.prototype,'visibilityState');
 // a display:none iframe still thinks it is visible, so its timers keep polling; tell it otherwise
 function vis(a){const f=a.fr;if(!f)return;try{const d=f.contentDocument;if(!d)return;
@@ -3142,9 +3255,9 @@ function show(k){
   st.set('mergedApp',k);
   for(const j in apps)vis(apps[j]);
 }
-$('bG').onclick=()=>show('G');$('bC').onclick=()=>show('C');
+$('bG').onclick=()=>show('G');$('bC').onclick=()=>show('C');$('bP').onclick=()=>show('P');
 // let the toolbar paint first, then build the (large) active dashboard
-const first=st.get('mergedApp')==='C'?'C':'G';
+const ma=st.get('mergedApp'),first=['C','P'].includes(ma)?ma:'G';
 requestAnimationFrame(()=>setTimeout(()=>show(first),0));
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 })();
