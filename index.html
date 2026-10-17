@@ -1438,12 +1438,12 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
 #cv,#dv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #cv{z-index:0}#dv{z-index:3}
 #ch{position:absolute;inset:0;z-index:1}
-#leg{position:absolute;z-index:2;top:6px;left:50px;pointer-events:none;font-size:12px;font-variant-numeric:tabular-nums}
-#tb{position:absolute;z-index:5;left:6px;top:30px;display:flex;flex-direction:column;gap:2px;background:#fffffff2;border:1px solid var(--line);border-radius:8px;padding:3px;max-height:calc(100% - 40px);overflow:auto}
-#tb button,#tb select,#tb input{width:36px;height:28px;padding:0;text-align:center;font-size:12px;border-radius:5px}
+#leg{position:absolute;z-index:2;top:44px;left:8px;pointer-events:none;font-size:12px;font-variant-numeric:tabular-nums}
+#tb{position:absolute;z-index:5;left:6px;top:6px;display:flex;flex-direction:row;align-items:center;flex-wrap:nowrap;gap:2px;background:#fffffff2;border:1px solid var(--line);border-radius:8px;padding:3px;max-width:calc(100% - 260px);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+#tb button,#tb select,#tb input{flex:none;width:36px;height:28px;padding:0;text-align:center;font-size:12px;border-radius:5px}
 #tb input[type=color]{padding:1px}
 #tb button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-#tb hr{width:100%;border:0;border-top:1px solid var(--line);margin:2px 0}
+#tb hr{flex:none;width:1px;height:20px;border:0;border-left:1px solid var(--line);margin:0 3px}
 #msg{padding:4px 10px;color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
 #msg.err{color:var(--dn)}
 .dots{display:inline-flex;gap:2px}.w .dots{margin-top:3px}
@@ -1483,7 +1483,11 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
 #mmsg,#smsg{padding:4px 10px calc(4px + env(safe-area-inset-bottom));color:var(--mut);border-top:1px solid var(--line);font-size:12px;min-height:24px}
 .dots i{width:8px;height:8px;border-radius:2px;display:block}.dots .g{background:var(--up)}.dots .r{background:var(--dn)}
 .w.bull{background:#2e9e4f14}
+.w.bear{background:#f2364514}
 #tbt{display:none}
+body.nohdr>header{display:none}
+#hshow{display:none;position:fixed;top:calc(4px + env(safe-area-inset-top));right:8px;z-index:60;height:24px;min-height:0;padding:0 8px;font-size:12px;opacity:.8}
+body.nohdr #hshow{display:block}
 #msg{padding-bottom:calc(4px + env(safe-area-inset-bottom))}
 @media(max-width:720px){
  header{padding:6px 8px;gap:6px}header b{display:none}
@@ -1499,11 +1503,13 @@ section{flex:1;display:flex;flex-direction:column;min-width:0}
  #grid{--cols:2!important;grid-auto-rows:230px}.hint{display:none}
  #tbt{display:block;position:absolute;z-index:6;left:6px;top:26px;width:40px;height:40px;padding:0;background:#fffffff2}
  #tbt.on{background:var(--acc);color:#fff;border-color:var(--acc)}
- #tb{display:none;flex-direction:row;left:52px;right:6px;top:26px;overflow-x:auto;overflow-y:hidden;max-height:none}
+ #tb{display:none;flex-direction:row;left:52px;right:6px;top:26px;overflow-x:auto;overflow-y:hidden;max-height:none;max-width:none}
  #tb.open{display:flex}
  #tb button,#tb select,#tb input{width:40px;height:36px;min-height:0;flex:none;font-size:13px}
  #tb hr{width:1px;height:auto;border:0;border-left:1px solid var(--line);margin:0 2px;flex:none}
 }
+.plan{margin:10px 0;padding:10px 12px;border:2px solid var(--acc);border-radius:8px;background:var(--panel)}.plan.buy{border-color:#00b34a}.plan.sell{border-color:#e5252a}.plan .big{font-size:16px;font-weight:700;margin:4px 0}.plan label{display:flex;margin:2px 0}.plan table{border-collapse:collapse;margin:4px 0}.plan td{padding:1px 14px 1px 0}
+#trb table{border-collapse:collapse;width:100%;font-size:12px}#trb td,#trb th{padding:3px 8px;text-align:left;border-bottom:1px solid var(--line)}
 #swrap{flex:1;min-height:0;overflow:auto;padding:8px 10px}
 #spanel .qov,.qov{position:absolute;right:72px;top:8px;z-index:5;pointer-events:none;background:#f1f3f6;border:1px solid #cfd4dc;border-radius:6px;padding:4px 8px;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .qov table{border-collapse:collapse}.qov td{padding:0 6px 0 0}.qov .ok{color:var(--up)}.qov .no{color:var(--dn)}
@@ -1583,13 +1589,15 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
- <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><label title="Account size in $ for position sizing (shown on the Entry line)">Acct $ <input id="acct" type="number" min="0" step="1000" value="25000" style="width:76px"></label><label title="Percent of the account risked per trade">Risk % <input id="rpct" type="number" min="0" max="10" step="0.05" value="0.5" style="width:56px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
+ <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><label title="Account size in $ for position sizing (shown on the Entry line)">Acct $ <input id="acct" type="number" min="0" step="1000" value="25000" style="width:76px"></label><label title="Percent of the account risked per trade">Risk % <input id="rpct" type="number" min="0" max="10" step="0.05" value="0.5" style="width:56px"></label><label title="Cap one position at this % of the account (0 = no cap)">Max pos % <input id="mpos" type="number" min="0" max="100" step="5" value="25" style="width:56px"></label><label title="Daily guardrail: the trade-plan button locks after this many trades taken today (0 = off)">Max trades/day <input id="tkmax" type="number" min="0" max="20" value="3" style="width:46px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
  <label><input type="checkbox" id="bo">Bullish only</label>
+ <label title="Only symbols where all four 30m checks (8/9, 5/12, 34/50, TestLine) are bearish"><input type="checkbox" id="br">Bearish only</label>
  <label id="folab" title="Only the starred (★) symbols get quotes, trend scores, scans and streaming"><input type="checkbox" id="fo">★ Focus <span id="fon" class="hint" style="display:inline"></span></label>
  <button id="add" title="Add the current symbol to the watchlist">+ Watch</button>
  <button id="dexp" title="Download the watchlist, Multi symbols, drawings and price alerts as one JSON file">⬇ Export JSON</button><button id="dimp" title="Load a JSON file made by Export JSON on another computer or phone">⬆ Import JSON</button><input type="file" id="dfile" accept=".json,application/json" class="hid">
+ <button id="hhide" title="Hide the top panel (tabs, symbol, settings) to give the chart more room">▲ Hide panel</button>
  <details id="kd"><summary>Alpaca keys</summary><div class="pop">
   <input type="text" id="key" placeholder="API key ID" autocomplete="off">
   <input type="password" id="sec" placeholder="Secret key" autocomplete="off">
@@ -1600,6 +1608,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
   <select id="feed"><option value="iex">IEX feed (free)</option><option value="sip">SIP feed (paid)</option></select>
   <small id="svNote">Discord webhook is sensitive. For public hosting, route it through a server/Edge Function instead of exposing it in the browser.</small></div></details>
 </header>
+<button id="hshow" title="Show the top panel">▼ Panel</button>
 <main>
  <aside id="wl" aria-label="Watchlist"></aside>
  <section id="sc">
@@ -1708,7 +1717,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
    <label title="Candle size the scanner uses for the BUY/SELL rules">Timeframe <select id="stf"><option value="5Min">5m</option><option value="15Min">15m</option><option value="30Min" selected>30m</option><option value="1Hour">1h</option></select></label>
    <label title="Number of bars (of the chosen timeframe) to look back for BUY/SELL signals">Last N bars <input id="sb" type="number" min="1" max="200" value="10" style="width:56px"></label>
    <label title="Show only signals that pass at least this many of the 6 entry-quality checks (Q column)"><input type="checkbox" id="sq">High quality only</label><label title="Minimum Q score (out of 6)">Min Q <input id="sqm" type="number" min="1" max="6" step="1" value="4" style="width:46px"></label>
-   <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
+   <button class="p" id="srun">Scan</button><button id="sexp">Export CSV</button><button id="strk" title="Every signal in the loaded history with its simulated result, split into trades you took and ones you skipped">📊 Tracker</button><label><input type="checkbox" id="sauto">Auto 60s</label><button id="snot">Enable alerts</button>
   </div>
   <div id="swrap"><div id="sreg" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
    <div class="tw"><table class="t" id="stab"></table></div><div id="sdet"></div>
@@ -1717,6 +1726,7 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
   <div id="smsg" role="status" aria-live="polite">Press Scan. Needs keys or a proxy URL.</div>
  </section>
 </main>
+<dialog id="trd" style="max-width:min(760px,96vw);width:100%;border:1px solid var(--line);border-radius:10px"><h2 style="margin:0 0 4px;font-size:16px">Missed-trade tracker</h2><p id="trn" style="margin:0 0 6px;color:var(--mut);font-size:12px"></p><label style="margin:4px 0">Cost per trade (R) <input id="tkc" type="number" step="0.01" min="0" value="0.05" style="width:64px"></label><div id="trb" style="max-height:60vh;overflow:auto"></div><div style="margin-top:8px"><button id="trx">Close</button></div></dialog>
 <script>
 if(!window.LightweightCharts){document.getElementById('msg').textContent='Could not load the charting library from jsDelivr, cdnjs or unpkg. Check your internet connection or ad/content blocker, then reload.';document.getElementById('msg').className='err';throw new Error('LightweightCharts failed to load')}
 const $=id=>document.getElementById(id);
@@ -2049,12 +2059,12 @@ async function trends(){
   await pool(ch.map(g=>async()=>{Object.assign(by,await pageBars(g,'30Min',st))}),6);
   T={};W.forEach(k=>{const r=by[k]&&trendOf(by[k]);if(r)T[k]=r});renderWL();if(!tReady){tReady=true;if(tab==='M')mk()}}catch(e){}}
 function renderWL(){
- let L=act().slice();if($('bo').checked)L=L.filter(k=>T[k]&&T[k].s===4);
+ let L=act().slice();if($('bo').checked)L=L.filter(k=>T[k]&&T[k].s===4);else if($('br').checked)L=L.filter(k=>T[k]&&T[k].s===0);
  L.sort((a,b)=>((T[b]?T[b].s:-1)-(T[a]?T[a].s:-1))||((Q[b]?Q[b].c0:-99)-(Q[a]?Q[a].c0:-99)));ORDER=L.slice();
  const _af=document.activeElement,_fk=_af&&$('wl').contains(_af)?(_af.dataset.st?'st':'w')+'|'+(_af.dataset.st||_af.dataset.s):null;
  $('wl').innerHTML=L.map(k=>{const c=Q[k],t=T[k];
   const dots=t?`<span class="dots" title="30m: 8/9, 5/12, 34/50 clouds, then TestLine (green = bullish)">${[...t.c,t.t].map(v=>`<i class="${v?'g':'r'}"></i>`).join('')}</span>`:'';
-  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}" data-s="${k}" role="button" tabindex="0" aria-label="${k}${c?', '+f(c.p)+', '+(c.c>=0?'+':'')+c.c.toFixed(2)+' percent':''}"><span><i class="st" data-st="${k}" role="button" tabindex="0" aria-pressed="${fav.includes(k)}" aria-label="Star ${k} for Focus" title="Star / unstar for Focus">${fav.includes(k)?'★':'☆'}</i><b>${k}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No bullish stocks yet</div>';mhead();addBtn();
+  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}${t&&t.s===0?' bear':''}" data-s="${k}" role="button" tabindex="0" aria-label="${k}${c?', '+f(c.p)+', '+(c.c>=0?'+':'')+c.c.toFixed(2)+' percent':''}"><span><i class="st" data-st="${k}" role="button" tabindex="0" aria-pressed="${fav.includes(k)}" aria-label="Star ${k} for Focus" title="Star / unstar for Focus">${fav.includes(k)?'★':'☆'}</i><b>${k}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No '+($('br').checked?'bearish':'bullish')+' stocks yet</div>';mhead();addBtn();
  if(_fk){const[kk,s]=_fk.split('|');const e=$('wl').querySelector(kk==='st'?'[data-st="'+s+'"]':'.w[data-s="'+s+'"]');if(e)e.focus({preventScroll:true})}}
 $('wl').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.w,.st')){e.preventDefault();e.stopPropagation();e.target.click()}})
 async function quotes(){
@@ -2549,7 +2559,7 @@ function detS(){const r=SC.res.find(x=>x.sym===SC.sel);if(!r){$('sdet').innerHTM
   `<tr><td>1 · Green candle, close above TestLine, TestLine green</td><td>close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}</td><td>${ok(r.c1)}</td></tr>`+
   `<tr><td>2 · 5/12 cloud bullish and resolved</td><td>EMA5 ${p(r.e5)} · EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR</td><td>${ok(r.c2)}</td></tr>`+
   `<tr><td>3 · 34/50 cloud bullish and resolved</td><td>EMA34 ${p(r.e34)} · EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR (ATR ${p(r.a)})</td><td>${ok(r.c3)}</td></tr>`+
-  `<tr><td>4 · Signal filter (${$('sflt').value})</td><td>${$('sflt').selectedOptions[0].text}</td><td>${ok(r.c4)}</td></tr></tbody></table></div><div class="hint" style="margin:6px 0">SELL is the exact opposite: red candle, close below the TestLine, TestLine red, both clouds bearish with a gap of at least Gap ATR.</div>`}
+  `<tr><td>4 · Signal filter (${$('sflt').value})</td><td>${$('sflt').selectedOptions[0].text}</td><td>${ok(r.c4)}</td></tr></tbody></table></div><div class="hint" style="margin:6px 0">SELL is the exact opposite: red candle, close below the TestLine, TestLine red, both clouds bearish with a gap of at least Gap ATR.</div>`+planCard(r)}
 function renderAlerts(){$('salr').innerHTML=SC.A.length?SC.A.slice(0,30).map(a=>`${a.t} · ${a.m}`).join('<br>'):'No alerts yet.'}
 // ---- BUY / SELL: one rule set for the chart labels AND the Scanner (always evaluated on 30m bars) ----
 // BUY  = first bar where the BUY state is true (green candle + 5/12 and 34/50 bullish and resolved + optional filter).
@@ -2660,8 +2670,8 @@ function tradeLevels(bars,e,AT){const E12=ema(bars.map(b=>b.c),12);const sg=e.si
   if(h1&&isFinite(E12[j]))cs=sg>0?Math.max(cs,Math.min(E12[j],b.l)):Math.min(cs,Math.max(E12[j],b.h))}
  return{entry,stop,t1,t2,risk,st,h1,trail:cs,R}}
 // position size from the Account / Risk % boxes in the header
-function sizeTxt(lv){const a=+($('acct')||{}).value||0,rp=+($('rpct')||{}).value||0;if(!(a>0&&rp>0&&lv.risk>0))return'';
- const sh=Math.floor(a*rp/100/lv.risk);return sh>0?` · ${sh} sh ($${Math.round(sh*lv.entry).toLocaleString()})`:''}
+function sharesFor(lv){const a=+($('acct')||{}).value||0,rp=+($('rpct')||{}).value||0,mp=+($('mpos')||{}).value||0;if(!(a>0&&rp>0&&lv.risk>0))return 0;let sh=Math.floor(a*rp/100/lv.risk);if(mp>0)sh=Math.min(sh,Math.floor(a*mp/100/lv.entry));return Math.max(0,sh)}
+function sizeTxt(lv){const sh=sharesFor(lv);return sh>0?` · ${sh} sh ($${Math.round(sh*lv.entry).toLocaleString()})`:''}
 function lvLines(ser,lv){const mk=(price,color,title)=>ser.createPriceLine({price,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});
  return[mk(lv.entry,'#607d8b','Entry'+sizeTxt(lv)),mk(lv.h1?lv.trail:lv.stop,'#e5252a',lv.h1?'Trail':'Stop'),mk(lv.t1,'#00b34a','T1 1.5R'),mk(lv.t2,'#007a33','T2 3R')]}
 let lvMain=[];
@@ -3039,12 +3049,45 @@ $('osend').onclick=()=>{const src=OP.view.length?OP.view:OP.res;if(!src.length){
 $('pclr').onclick=()=>{OM.syms=['','','','','',''];OMsave();pk()};
 $('pexp').onclick=exportDr;$('pimp').onclick=()=>{$('dfile').value='';$('dfile').click()};
 
+
+// ---------- missed-trade tracker, trade-plan card, guardrails ----------
+let TK={};try{TK=JSON.parse(store.get('ctaken')||'{}')}catch(e){TK={}}
+const tkKey=(s,e)=>s+'|'+e.side+'|'+e.t,tkSave=()=>store.set('ctaken',JSON.stringify(TK));
+['mpos','tkmax','tkc'].forEach(id=>{const v=store.get('c_'+id);if(v!=null&&$(id))$(id).value=v;$(id).addEventListener('change',()=>store.set('c_'+id,$(id).value))});
+function tkRows(){const out=[];(SC.res||[]).forEach(r=>{const bars=SC.raw&&SC.raw[r.sym];if(!bars||!bars.length||!r.ev)return;const AT=atr(bars);
+ r.ev.forEach(e=>{const lv=tradeLevels(bars,e,AT);if(lv)out.push({sym:r.sym,e,lv,key:tkKey(r.sym,e),closed:lv.R!=null})})});
+ return out.sort((a,b)=>a.e.t<b.e.t?1:-1)}
+function tkShow(){const rows=tkRows(),cost=+$('tkc').value||0;
+ const st=f=>{const c=rows.filter(x=>x.closed&&f(x));if(!c.length)return'<td colspan="4">–</td>';const R=c.map(x=>x.lv.R-cost),w=R.filter(v=>v>0).length,t=R.reduce((p,q)=>p+q,0);return`<td>${c.length}</td><td>${(100*w/c.length).toFixed(0)}%</td><td>${(t/c.length).toFixed(2)}R</td><td class="${t>=0?'up':'dn'}">${t.toFixed(1)}R</td>`};
+ const nOpen=rows.filter(x=>!x.closed).length;
+ $('trn').textContent=`${rows.length} signals in the loaded ${stl()} history (${nOpen} still open, not counted). Results assume a fill at the signal close, so treat them as best case.`;
+ $('trb').innerHTML=`<table><thead><tr><th></th><th>Closed</th><th>Win %</th><th>Avg R</th><th>Total R</th></tr></thead><tbody><tr><td><b>All signals</b></td>${st(()=>true)}</tr><tr><td><b>I took</b></td>${st(x=>TK[x.key])}</tr><tr><td><b>I skipped</b></td>${st(x=>!TK[x.key])}</tr></tbody></table>
+ <table style="margin-top:10px"><thead><tr><th>Took</th><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Result</th><th>R</th></tr></thead><tbody>`+rows.slice(0,60).map(x=>`<tr><td><input type="checkbox" data-k="${x.key}" ${TK[x.key]?'checked':''}></td><td>${new Date(x.e.t).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td><b>${x.sym}</b></td><td class="${x.e.side==='buy'?'up':'dn'}">${x.e.side.toUpperCase()}</td><td>${fm(x.lv.entry,2)}</td><td>${x.lv.st}</td><td>${x.closed?fm(x.lv.R-cost,2):'–'}</td></tr>`).join('')+'</tbody></table>'}
+$('trb').addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;if(e.target.checked)TK[k]=Date.now();else delete TK[k];tkSave();tkShow()});
+$('tkc').addEventListener('input',()=>tkShow());$('trx').onclick=()=>$('trd').close();
+$('strk').onclick=()=>{if(!SC.res.length){$('smsg').textContent='Run a Scan first.';return}tkShow();$('trd').showModal()};
+function tkTake(k){TK[k]=Date.now();tkSave();detS()}
+function planCard(r){const bars=SC.raw&&SC.raw[r.sym];if(!bars||!r.ev||!r.ev.length)return'';const e=r.ev[r.ev.length-1],lv=tradeLevels(bars,e,atr(bars));if(!lv)return'';
+ const sg=e.side==='buy'?1:-1,sh=sharesFor(lv),px=bars[bars.length-1].c,away=sg*(px-lv.entry)/lv.risk,done=lv.R!=null,k=tkKey(r.sym,e),day=new Date().toDateString(),
+  nt=Object.keys(TK).filter(z=>new Date(TK[z]).toDateString()===day).length,mx=+$('tkmax').value||0,lim=mx>0&&nt>=mx,risk=sh*lv.risk,
+  verdict=done?`Trade already finished (${lv.st}) – nothing to do`:away>.5?`Extended ${fm(away,1)}R past entry – skip it, do not chase`:`Still valid: price is ${fm(away,1)}R from entry (valid until 0.5R past)`;
+ const chk=['Signal is on a CLOSED bar','Stop order is placed with the entry','Size is what the plan says (not more)','SPY is not fighting the trade'].map(t=>`<label><input type="checkbox" class="pck" onchange="var g=document.getElementById('tkgo');g.disabled=g.dataset.lim==='1'||![...document.querySelectorAll('.pck')].every(x=>x.checked)">${t}</label>`).join('');
+ return`<div class="plan ${e.side}"><b>${e.side.toUpperCase()} plan · ${r.sym}</b> · signal ${new Date(e.t).toLocaleString()}
+ <div class="big">${sh>0?`You risk $${Math.round(risk).toLocaleString()} to make $${Math.round(risk*1.5).toLocaleString()} (T1) / $${Math.round(risk*3).toLocaleString()} (T2)`:'Set Acct $ and Risk % in the header to see your dollar risk'}</div>
+ <table><tr><td>Entry</td><td>${fm(lv.entry,2)}</td><td>Shares</td><td>${sh||'–'}${sh?` ($${Math.round(sh*lv.entry).toLocaleString()})`:''}</td></tr><tr><td>Stop</td><td>${fm(lv.stop,2)}</td><td>T1 (1.5R)</td><td>${fm(lv.t1,2)}</td></tr><tr><td>Last price</td><td>${fm(px,2)}</td><td>T2 (3R)</td><td>${fm(lv.t2,2)}</td></tr></table>
+ <div class="${done||away>.5?'dn':'up'}"><b>${verdict}</b></div>
+ ${done?'':chk+`<button id="tkgo" class="p" disabled ${lim?'data-lim="1"':''} onclick="${lim?'':`tkTake('${k}')`}" style="margin-top:6px">${TK[k]?'✓ Logged as taken':lim?`Daily limit reached (${nt}/${mx})`:'✓ I took this trade'}</button><span style="margin-left:8px;color:var(--mut)">Taken today: ${nt}${mx?'/'+mx:''}</span>`}</div>`}
+
 // ---------- wiring + restore saved settings ----------
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
 $('zi').onclick=()=>zoom(.7);$('zo').onclick=()=>zoom(1/.7);$('zf').onclick=zfit;
 $('tbt').onclick=()=>$('tb').classList.toggle('open');
 $('fo').onchange=()=>{focus=$('fo').checked;saveFav();focusUI();if(focus&&!fav.length)flash('Focus is on but nothing is starred, so the full list is shown. Tap ☆ next to a symbol in the watchlist.');Q={};T={};wlChanged();if(tab==='M')mk()};
-$('bo').onchange=()=>{store.set('cb',$('bo').checked?'1':'0');renderWL()};
+const boSave=()=>{store.set('cb',$('bo').checked?'1':'0');store.set('cbr',$('br').checked?'1':'0');renderWL()};
+$('bo').onchange=()=>{if($('bo').checked)$('br').checked=false;boSave()};
+$('br').onchange=()=>{if($('br').checked)$('bo').checked=false;boSave()};
+function hdrVis(h){document.body.classList.toggle('nohdr',h);store.set('chh',h?'1':'0');requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')))}
+$('hhide').onclick=()=>hdrVis(true);$('hshow').onclick=()=>hdrVis(false);
 $('sym').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 ['tf','days','feed'].forEach(i=>$(i).onchange=()=>{if(i==='feed')MR={};if(tab==='M'){saveSettings();if(i==='feed')mk()}else load()});
 ['key','sec','px','dw','stk'].forEach(i=>$(i).oninput=()=>{saveSettings();setSync(syncOn()?'ready':'local only')});$('da').onchange=()=>store.set('cda',$('da').checked?'1':'0');$('expimg').onclick=exportImage;
@@ -3055,7 +3098,7 @@ $('px').value=store.get('cpx')||'';$('dw').value=store.get('cdw')||'';$('stk').v
 $('sym').value=store.get('csym')||'TSLA';$('tf').value=store.get('ct')||'15Min';if(!$('tf').value)$('tf').value='15Min';$('days').value=store.get('cdy')||'5';
 $('c4').checked=store.get('c4')==='1';$('c5').checked=store.get('c5')==='1';$('live').checked=store.get('cl')!=='0';$('sig').checked=store.get('csig')!=='0';$('sig').onchange=()=>{store.set('csig',$('sig').checked?'1':'0');sigRedraw();if($('sig').checked){sigEnsure(SYM,rows.length?rows[0].time:0,drawPlan);mcharts.forEach(t=>sigEnsure(t.sym,t.rows.length?t.rows[0].time:0,()=>tileSig(t)))}};
 magnet=store.get('cm')==='1';$('mag').classList.toggle('on',magnet);
-$('bo').checked=store.get('cb')==='1';
+$('bo').checked=store.get('cb')==='1';$('br').checked=store.get('cbr')==='1'&&!$('bo').checked;document.body.classList.toggle('nohdr',store.get('chh')==='1');
 setSync(syncOn()?'ready':'local only');setTool('sel');pdrawVis(store.get('pdr')===null?!matchMedia('(max-width:720px)').matches:store.get('pdr')!=='0');msetTool('sel');mdrawVis(store.get('mdr')===null?!matchMedia('(max-width:720px)').matches:store.get('mdr')!=='0');setLay(+store.get('mlay')===2?2:1);syncToggles();focusUI();renderWL();
 if(hasKey()){load();quotes();trends()}else $('kd').open=true;
 {const t0=store.get('ctab');if(['M','S','O','P'].includes(t0))setTab(t0)}
