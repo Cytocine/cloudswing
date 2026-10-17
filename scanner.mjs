@@ -37,6 +37,9 @@ for(let i=0;i<WL.length;i+=14){const by=await bars(WL.slice(i,i+14));
 for(const k of Object.keys(sent))if(now-sent[k]>3*864e5)delete sent[k];
 fs.writeFileSync(SENT,JSON.stringify(sent));
 console.log(`${new Date().toISOString()} | ${TF} | filter ${FLT} | ${got}/${WL.length} symbols had bars | newest closed bar ${newest||'none'} | ${inBuy} in BUY state, ${inSell} in SELL state | ${msgs.length} NEW signals`);if(!got)console.log('WARNING: no bars returned. Check keys, feed, or whether the market was open.');msgs.forEach(m=>console.log(m));
+console.log('Discord webhook:',E.DISCORD_WEBHOOK?'set':'NOT SET','| ntfy topic:',E.NTFY_TOPIC?'set':'NOT SET');
+if(E.TEST_ALERT==='1')msgs.push('TEST: Cytocine cloud scanner alert path works');
+const send=async(name,u,o)=>{try{const res=await fetch(u,o);console.log(name,res.ok?`sent (${res.status})`:`FAILED ${res.status} ${(await res.text()).slice(0,150)}`)}catch(e){console.log(name,'ERROR',e.message)}};
 if(msgs.length){const text=msgs.join('\n');
- if(E.DISCORD_WEBHOOK)await fetch(E.DISCORD_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'Cytocine Cloud',content:text.slice(0,1900)})});
- if(E.NTFY_TOPIC)await fetch('https://ntfy.sh/'+E.NTFY_TOPIC,{method:'POST',headers:{Title:'Cytocine signal'},body:text})}
+ if(E.DISCORD_WEBHOOK)await send('Discord',E.DISCORD_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'Cytocine Cloud',content:text.slice(0,1900)})});
+ if(E.NTFY_TOPIC)await send('ntfy','https://ntfy.sh/'+E.NTFY_TOPIC,{method:'POST',headers:{Title:'Cytocine signal'},body:text})}
