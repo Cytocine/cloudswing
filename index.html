@@ -187,7 +187,7 @@ tr.row:focus-visible,.cc:focus-visible,th[data-k]:focus-visible{outline:2px soli
   <select id="exch" aria-label="Exchange filter"><option value="">All exchanges</option></select>
   <span class="flt" id="gflt"><label><input id="fon" type="checkbox" checked> Filter</label> Price &gt; <input id="fp" type="number" value="1" step="0.5" min="0"> RVOL &gt; <input id="fr" type="number" value="2" step="0.5" min="0"> Vol &gt; <input id="fv" type="number" value="1" step="0.5" min="0">M</span>
   <span class="flt" id="gonly"><label><input id="fb" type="checkbox" checked> EMA13 &gt; AVWAP</label> <label><input id="fbuy" type="checkbox"> BUY within</label> <input id="fbn" type="number" value="4" min="1" max="50"> bars</span>
-  <span class="flt" id="wctl" hidden><label title="Always uses 30m bars: day change, EMA13 > AVWAP (green) and close > AVWAP"><input id="wmom" type="checkbox" checked> 30m: day ≥</label> <input id="wmc" type="number" value="1" step="0.5" min="0">% · AVWAP green · close &gt; AVWAP <label><input id="wonly" type="checkbox"> BUY within</label> <input id="wn" type="number" value="4" min="1" max="50"> bars <label><input id="wgrp" type="checkbox" checked> Group by sector</label> <label><input id="wg" type="checkbox"> Top gainers only</label> <button id="wedit">Edit watchlist</button></span>
+  <span class="flt" id="wctl" hidden><button id="wscan" class="p" title="Scan the watchlist now (trend, higher-timeframe, 30m filter, sectors). Nothing scans automatically on this tab.">Scan</button> <label title="Always uses 30m bars: day change, EMA13 > AVWAP (green) and close > AVWAP"><input id="wmom" type="checkbox" checked> 30m: day ≥</label> <input id="wmc" type="number" value="1" step="0.5" min="0">% · AVWAP green · close &gt; AVWAP <label><input id="wonly" type="checkbox"> BUY within</label> <input id="wn" type="number" value="4" min="1" max="50"> bars <label><input id="wgrp" type="checkbox" checked> Group by sector</label> <label><input id="wg" type="checkbox"> Top gainers only</label> <button id="wedit">Edit watchlist</button></span>
   <label><input id="tbar" type="checkbox" checked> Chart toolbar</label>
   <label><input id="ind" type="checkbox" checked> Indicator</label>
   <label><input id="shade" type="checkbox" checked> Day shading</label>
@@ -248,6 +248,7 @@ tr.row:focus-visible,.cc:focus-visible,th[data-k]:focus-visible{outline:2px soli
 const BASE='https://financialmodelingprep.com/stable';
 const TFS=[['1m','1min'],['5m','5min'],['15m','15min'],['30m','30min'],['1h','1hour'],['4h','4hour'],['1D','eod']];
 const $=id=>document.getElementById(id);
+let wGo=false,wBusy=false,wDone=false,wStale=false; // Scanner tab: scans only when you press Scan
 let lastOrder='',gainers=[],sel=null,tf='15min',sortK='changesPercentage',sortDir=-1,timer=null;
 
 // storage may be blocked on some browsers; fail quietly
@@ -711,7 +712,7 @@ function buildSecPanel(){
 }
 // sectors: your own tag (NVDA:Semis in Edit watchlist) wins; otherwise looked up once from FMP and cached
 async function loadSectors(){
-  if(!key())return;
+  if(!key()||!wGo)return;
   const need=WLS.filter(s=>!WTAG[s]&&!SEC[s]&&!secTried.has(s));
   if(!need.length)return;
   const sg=scope('sec');need.forEach(s=>secTried.add(s));let qi=0;
@@ -805,7 +806,7 @@ async function rawBars(syms,t,span,o={}){
 function fetchMulti(syms,t,span,o){return rawBars(syms,t,span,o)}
 async function loadHtf(force=false){
   const H=HTF[tf];
-  if(tab!=='w'||!H||!(akey()&&asec())||!WLS.length)return;
+  if(tab!=='w'||!wGo||!H||!(akey()&&asec())||!WLS.length)return;
   if(force||htfTf!==H){for(const k in htf)delete htf[k];for(const k in htfAt)delete htfAt[k];htfTf=H}
   const run=++htfRun,syms=WLS.filter(x=>stale(htfAt,x,5*60e3));
   if(!syms.length)return;
@@ -824,7 +825,7 @@ async function loadHtf(force=false){
 }
 const m30={},m30At={};let m30Ready=false,m30Run=0;
 async function loadM30(force=false){
-  if(tab!=='w'||!$('wmom').checked||!(akey()&&asec())||!WLS.length)return;
+  if(tab!=='w'||!wGo||!$('wmom').checked||!(akey()&&asec())||!WLS.length)return;
   if(force)for(const k in m30At)delete m30At[k];
   const run=++m30Run,syms=WLS.filter(x=>stale(m30At,x,3*60e3));
   if(!syms.length){m30Ready=true;renderRows();return}
@@ -844,7 +845,7 @@ async function loadM30(force=false){
   }catch(e){if(!isAbort(e))status('30m scan error: '+e.message)}
 }
 const momOK=s=>{const m=m30[s];return !!m&&m.bull&&m.above&&m.chg!=null&&m.chg>=(+$('wmc').value||0)};
-const htfCell=s=>{if(!HTF[tf])return'–';const h=htf[s];if(h===undefined)return'…';return h==null?'·':`<span class="${h.bull?'up':'down'}" title="${HTF[tf]}: EMA13 ${h.bull?'>':'<'} AVWAP${h.buy!=null?' · BUY '+h.buy+' bars ago':''}">${h.bull?'✓':'✗'}</span>`};
+const htfCell=s=>{if(!HTF[tf])return'–';const h=htf[s];if(h===undefined)return wBusy?'…':'–';return h==null?'·':`<span class="${h.bull?'up':'down'}" title="${HTF[tf]}: EMA13 ${h.bull?'>':'<'} AVWAP${h.buy!=null?' · BUY '+h.buy+' bars ago':''}">${h.bull?'✓':'✗'}</span>`};
 const rvCell=s=>{const v=rvol[s];return v==null?'–':`<span class="${v>=2?'up':''}">${v.toFixed(1)}x</span>`};
 const gapCell=s=>{const t=trend[s];return t&&t.gap>-999?(t.gap>=0?'+':'')+t.gap.toFixed(1)+'%':'–'};
 const riskOf=s=>{const t=trend[s];return t&&t.av>0&&t.last>t.av?(t.last-t.av)/t.last*100:999};
@@ -909,7 +910,7 @@ function renderRowsCore(){
     cs.scrollLeft=cl;
   }
   $('flt-note').textContent=!haveA&&(on||fb)?'RVOL / trend filters need Alpaca keys':(fb&&!trendReady?'Scanning trend…':`${list.length}/${gainers.length} shown`);
-  if(W)$('flt-note').textContent=!haveA?'Scanner needs Alpaca keys':(!trendReady?'Scanning…':(!m30Ready&&$('wmom').checked?'Scanning 30m…':`${list.length}/${WLS.length} shown`));else if(on&&mv&&volErr)$('flt-note').textContent+=' · volume data unavailable';
+  if(W)$('flt-note').textContent=!haveA?'Scanner needs Alpaca keys':(wBusy?(!trendReady?'Scanning…':(!m30Ready&&$('wmom').checked?'Scanning 30m…':'Scanning…')):(!wDone?`${list.length} symbols · press Scan to filter`:(wStale?'Settings changed · press Scan':`${list.length}/${WLS.length} shown`)));else if(on&&mv&&volErr)$('flt-note').textContent+=' · volume data unavailable';
 }
 
 function chartAria(){
@@ -995,11 +996,12 @@ async function loadRvol(force=false){
 const trend={};let trendReady=false,trendRun=0;
 async function loadTrend(force=false){
   if(tab==='v'){renderRows();return}
+  if(tab==='w'&&!wGo){if(force)wStale=wDone;renderRows();return} // Scanner tab is manual
   const run=++trendRun,t=tf;
   const base=scanSymbols();if(!(akey()&&asec())||!base.length){renderRows();return}
   if(force)for(const k in trendAt)delete trendAt[k];
   const syms=base.filter(s=>stale(trendAt,s,trendTTL()));
-  if(!syms.length){trendReady=true;renderRows();if(tab==='w'){loadHtf(force);loadRvol(force);loadM30(force)}return}
+  if(!syms.length){trendReady=true;renderRows();if(tab==='w')await Promise.all([loadHtf(force),loadRvol(force),loadM30(force)]);return}
   trendReady=false;renderRows();
   const span=t==='eod'?730:Math.max(1,+$('days').value||3)*2+5;
   try{
@@ -1014,7 +1016,7 @@ async function loadTrend(force=false){
       trend[s]=I.avwap[n]>0?{bull:I.bull[n],gap:(I.slow[n]/I.avwap[n]-1)*100,buy:buyAgo(bars,I),last:bars[n].close,av:I.avwap[n],chg}:{bull:false,gap:-999,buy:null,last:bars[n].close,av:I.avwap[n],chg};
       if(typeof bars[n].time==='number'&&window.logSig){const tb=trend[s].buy;if(tb!=null&&tb<=1)logSig(s,bars[n-tb],t);updJ(s,bars,t)}
     }
-    trendReady=true;renderRows();if(tab==='w'){loadHtf(force);loadRvol(force);loadM30(force)}
+    trendReady=true;renderRows();if(tab==='w')await Promise.all([loadHtf(force),loadRvol(force),loadM30(force)]);
     window.loadReg&&loadReg(force);
   }catch(e){if(run===trendRun&&!isAbort(e))status('Trend scan error: '+e.message)}
 }
@@ -1118,7 +1120,7 @@ function showTab(t){
   $('gonly').hidden=t!=='g';$('gflt').hidden=t==='v';$('wctl').hidden=t!=='w';$('thv2').hidden=$('thv1').hidden=t!=='v';$('vctl').hidden=t!=='v';$('wsecbar').hidden=t!=='w';['thc','thb','thh','thg','thk'].forEach(i=>$(i).hidden=t!=='w');$('thx').hidden=t!=='w'&&t!=='v';$('thp').hidden=t==='w'||t==='v';$('mainview').classList.toggle('w',t==='w'||t==='v');$('mainview').classList.toggle('v',t==='v');$('mainview').classList.toggle('wc',t==='w'&&compactView);lastOrder='';{const ps=TS[t];if(ps&&ps.sortK){sortK=ps.sortK;sortDir=ps.sortDir}else if(t==='w'){sortK='chg';sortDir=-1}else if(t==='g'){sortK='changesPercentage';sortDir=-1}else if(t==='v'){if($('vsrc').value==='g'){sortK='chg';sortDir=-1}else{sortK='vbars';sortDir=1}}}
   [['g','tabG'],['w','tabW'],['v','tabV'],['m','tabM']].forEach(([k,id])=>{const b=$(id);b.setAttribute('aria-selected',k===t);b.tabIndex=k===t?0:-1});
   $('dimw').parentElement.hidden=$('jbtn').hidden=t==='m'||t==='v';
-  $('refresh').title={g:'Reload gainers and the chart',w:'Rescan the watchlist',v:'Reload the chart (press Scan to rescan signals)',m:'Reload all charts'}[t];
+  $('refresh').title={g:'Reload gainers and the chart',w:'Reload the chart (press Scan to rescan the watchlist)',v:'Reload the chart (press Scan to rescan signals)',m:'Reload all charts'}[t];
   {const h=needHint(t);if(h)status(h)}
   if(t==='m')buildMulti();
   else{
@@ -1278,7 +1280,7 @@ $('rows').onclick=e=>{
     if(sel===s){const trs=[...$('rows').querySelectorAll('[data-s]')],i=trs.findIndex(t=>t.dataset.s===s),nx=trs[i+1]||trs[i-1];sel=nx&&nx.dataset.s!==s?nx.dataset.s:null;if(sel){select(sel);return}}
     renderRows();return}
   const tr=e.target.closest('#rows [data-s]');if(tr)select(tr.dataset.s)};
-$('wmom').onchange=()=>{lastOrder='';m30Ready=false;renderRows();loadM30()};$('wmc').oninput=()=>{lastOrder='';renderRows()};
+$('wmom').onchange=()=>{lastOrder='';if($('wmom').checked&&wDone&&!m30Ready)wStale=true;renderRows()};$('wmc').oninput=()=>{lastOrder='';renderRows()};
 function applyView(){$('wview').textContent=compactView?'Table':'Chips';$('wview').title=compactView?'Switch to the full table':'Switch to compact chips';$('mainview').classList.toggle('wc',tab==='w'&&compactView)}
 $('wview').onclick=()=>{compactView=!compactView;store.set('wview',compactView?'chips':'table');applyView();lastOrder='';renderRows()};applyView();
 $('wunhide').onclick=()=>{WLS.forEach(s=>HIDS.delete(s));saveHid();lastOrder='';renderRows()};
@@ -1295,9 +1297,21 @@ document.querySelector('thead').onclick=e=>{
   sortDir=sortK===k?-sortDir:(k==='v2h'||k==='v1d'?1:-1);sortK=k;renderRows();
 };
 $('exch').onchange=renderRows;['fon','fp','fr','fv','fb','fbuy','fbn','wonly','wn','wg','wgrp'].forEach(i=>$(i).oninput=renderRows);
-$('refresh').onclick=()=>{if(tab==='m')loadMulti();else if(tab==='v'){if($('vsrc').value==='g'&&key())loadGainers(true);if(sel)loadChart()}else if(tab==='w'){if(key())loadGainers(true);loadTrend(true);if(sel)loadChart()}else{loadGainers(true);if(sel)loadChart()}};
+$('refresh').onclick=()=>{if(tab==='m')loadMulti();else if(tab==='v'){if($('vsrc').value==='g'&&key())loadGainers(true);if(sel)loadChart()}else if(tab==='w'){if(key())loadGainers(true);if(sel)loadChart()}else{loadGainers(true);if(sel)loadChart()}};
 $('save').onclick=()=>{vTried='';store.set('fmpKey',key());store.set('alpKey',akey());store.set('alpSec',asec());document.querySelector('header').classList.remove('open');loadGainers(true);if(sel)loadChart()};
-function schedule(){clearInterval(timer);if($('auto').checked)timer=setInterval(()=>{if(document.hidden)return;if(tab==='m')loadMulti();else if(tab==='v'){loadV();if(sel)loadChart()}else if(tab==='w'){if(key())loadGainers();loadTrend();if(sel)loadChart()}else{loadGainers();if(sel)loadChart()}},60000)}
+function schedule(){clearInterval(timer);if($('auto').checked)timer=setInterval(()=>{if(document.hidden)return;if(tab==='m')loadMulti();else if(tab==='v'){loadV();if(sel)loadChart()}else if(tab==='w'){if(key())loadGainers();if(sel)loadChart()}else{loadGainers();if(sel)loadChart()}},60000)}
+async function wScan(){
+  if(tab!=='w'||wBusy)return;
+  if(!(akey()&&asec())){status(needHint('w'));return}
+  wBusy=true;wGo=true;wStale=false;$('wscan').disabled=true;$('wscan').textContent='Scanning…';renderRows();
+  try{
+    if(key()&&!gainers.length)await loadGainers();
+    await Promise.all([loadTrend(true),loadSectors()]);
+    if(trendReady)wDone=true;
+    status('Scan done '+new Date().toLocaleTimeString());
+  }finally{wBusy=false;wGo=false;$('wscan').disabled=false;$('wscan').textContent='Scan';renderRows()}
+}
+$('wscan').onclick=wScan;
 $('auto').onchange=schedule;schedule();
 {const st=store.get('tab');if(st==='w'||st==='v'||st==='m')showTab(st);else if(key())loadGainers();if(needHint(tab))document.querySelector('header').classList.add('open')}
 </scr⁣ipt>
