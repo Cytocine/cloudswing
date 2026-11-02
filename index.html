@@ -193,6 +193,8 @@ tr.row:focus-visible,.cc:focus-visible,th[data-k]:focus-visible{outline:2px soli
   <label><input id="shade" type="checkbox" checked> Day shading</label>
   <label><input id="tc" type="checkbox" checked> Trend candles</label>
   <label><input id="sig" type="checkbox" checked> Buy/Sell</label>
+  <label title="Auto trendlines: rising support / falling resistance from recent swing lows / highs"><input id="atl" type="checkbox" checked> Auto TL</label>
+  <label title="Auto support / resistance zones clustered from swing highs and lows"><input id="asr" type="checkbox" checked> Auto S/R</label>
   <span class="flt">Intraday days <input id="days" type="number" value="3" min="1" max="20"></span>
   <label><input id="auto" type="checkbox" checked> Auto 60s</label>
   </div>
@@ -261,6 +263,7 @@ if(typeof LightweightCharts==='undefined'){
   throw new Error('lightweight-charts not loaded');
 }
 let showInd=true,showDays=true,trendCandles=true,showSig=true;
+let autoTL=store.get('gatl')!=='0',autoSR=store.get('gasr')!=='0';
 const MOBQ='(max-width:800px),(max-height:500px) and (orientation:landscape)',isMob=()=>matchMedia(MOBQ).matches,VIS_MOB=70;const PANES=[];
 const tnum=t=>typeof t==='number'?t:Date.parse(t+'T00:00:00Z')/1000;
 const FIB=[0,0.236,0.382,0.5,0.618,0.786,1];
@@ -374,6 +377,64 @@ function buyAgo(B,I){
 }
 const segDist=(px,py,[x1,y1,x2,y2])=>{const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy;let t=L?((px-x1)*dx+(py-y1)*dy)/L:0;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(x1+t*dx),py-(y1+t*dy))};
 
+
+// ---------- Auto trendlines + support/resistance zones (swing based) ----------
+const AUTOC=new WeakMap();
+function autoSwings(b,k){const hi=[],lo=[];
+ for(let i=k;i<b.length-k;i++){let isH=true,isL=true;
+  for(let j=i-k;j<=i+k;j++){if(j===i)continue;if(b[j].high>=b[i].high)isH=false;if(b[j].low<=b[i].low)isL=false;if(!isH&&!isL)break}
+  if(isH)hi.push({i,p:b[i].high});if(isL)lo.push({i,p:b[i].low})}
+ return{hi,lo}}
+function autoCalc(bars,k){
+ const n=bars.length,out={lines:[],zones:[]};if(n<20)return out;
+ const sw=autoSwings(bars,k),last=bars[n-1].close;
+ const pick=(pts,support)=>{const cand=pts.slice(-7);let best=null;
+  for(let a=0;a<cand.length-1;a++)for(let c=a+1;c<cand.length;c++){
+   const A=cand[a],B=cand[c],slope=(B.p-A.p)/(B.i-A.i);
+   if(support?slope<=0:slope>=0)continue;
+   let ok=true,touches=2;
+   for(let i=A.i;i<n;i++){const lv=A.p+slope*(i-A.i),tol=lv*0.004,x=support?bars[i].low:bars[i].high;
+    if(support?x<lv-tol*1.5:x>lv+tol*1.5){ok=false;break}
+    if(i>B.i&&Math.abs(x-lv)<=tol)touches++}
+   if(!ok)continue;
+   const score=touches*2+(B.i/n)*3+Math.min(1,(B.i-A.i)/20);
+   if(!best||score>best.score)best={A,B,score,support}}
+  return best};
+ for(const sup of[true,false]){const r=pick(sup?sw.lo:sw.hi,sup);if(r)out.lines.push({support:sup,a:r.A,b:r.B})}
+ let atr=0;const m=Math.min(14,n-1);
+ for(let i=n-m;i<n;i++)atr+=Math.max(bars[i].high-bars[i].low,Math.abs(bars[i].high-bars[i-1].close),Math.abs(bars[i].low-bars[i-1].close));
+ atr/=m;
+ const tol=Math.max(atr*0.6,last*0.004),pts=sw.hi.concat(sw.lo).sort((a,b)=>a.p-b.p),cl=[];
+ for(const pt of pts){const c=cl[cl.length-1];if(c&&pt.p-c.hi<=tol){c.hi=pt.p;c.items.push(pt)}else cl.push({lo:pt.p,hi:pt.p,items:[pt]})}
+ const zs=cl.filter(c=>c.items.length>=2).map(c=>{
+  const first=Math.min(...c.items.map(x=>x.i)),mid=(c.lo+c.hi)/2,pad=Math.max(tol*0.25,(c.hi-c.lo)*0.1);
+  return{lo:c.lo-pad,hi:c.hi+pad,n:c.items.length,i0:first,dist:Math.abs(mid-last)}});
+ zs.sort((a,b)=>(b.n*2-b.dist/last*40)-(a.n*2-a.dist/last*40));
+ out.zones=zs.slice(0,6);return out}
+function autoGet(bars,k){const n=bars.length,l=bars[n-1],s=n+'|'+l.close+'|'+l.high+'|'+l.low+'|'+k;
+ const c=AUTOC.get(bars);if(c&&c.s===s)return c.a;const a=autoCalc(bars,k);AUTOC.set(bars,{s,a});return a}
+const autoFmt=v=>v>=1?v.toFixed(2):v.toFixed(4);
+const autoHex=(h,a)=>{const n=parseInt(h.slice(1),16);return'rgba('+(n>>16)+','+(n>>8&255)+','+(n&255)+','+a+')'};
+// X(logicalIndex)->px, Y(price)->px, pw = plot width (excludes the price scale)
+function autoPaint(ctx,A,X,Y,pw,H,last,o){
+ ctx.save();ctx.beginPath();ctx.rect(0,0,pw,H);ctx.clip();
+ if(o.sr){ctx.font='10px system-ui,sans-serif';ctx.textBaseline='middle';
+  for(const z of A.zones.slice(0,o.maxZ||6)){
+   const y1=Y(z.hi),y2=Y(z.lo);if(y1==null||y2==null)continue;
+   const x0=X(z.i0),x=Math.max(0,x0==null?0:x0),res=(z.lo+z.hi)/2>=last,col=res?'#f87171':'#34d399',hh=Math.max(1,y2-y1);
+   ctx.fillStyle=autoHex(col,.14);ctx.fillRect(x,y1,pw-x,hh);
+   ctx.strokeStyle=autoHex(col,.55);ctx.lineWidth=1;ctx.setLineDash([]);
+   ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(pw,y1);ctx.moveTo(x,y2);ctx.lineTo(pw,y2);ctx.stroke();
+   if(!o.noLabel){const t=(res?'R ':'S ')+autoFmt(z.lo)+'\u2013'+autoFmt(z.hi)+' \u00b7 '+z.n+'x',tw=ctx.measureText(t).width+8,ly=(y1+y2)/2;
+    ctx.fillStyle=autoHex(col,.9);ctx.fillRect(pw-4-tw,ly-7,tw,14);ctx.fillStyle='#06100f';ctx.textAlign='left';ctx.fillText(t,pw-4-tw+4,ly+.5)}}}
+ if(o.tl){ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  for(const l of A.lines){
+   const ax=X(l.a.i),ay=Y(l.a.p),bx=X(l.b.i),by=Y(l.b.p);if(ax==null||ay==null||bx==null||by==null)continue;
+   const dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy)||1,s=(pw+H)*4/len;
+   ctx.strokeStyle=l.support?'#34d399':'#f87171';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+dx*s,ay+dy*s);ctx.stroke()}
+  ctx.setLineDash([])}
+ ctx.restore()}
+
 class Pane{
   constructor(el,{tools=false}={}){
     this.el=el;this.bars=[];this.idx=new Map();this.dr=[];this.key='';this.tool='cursor';this.pend=null;this.hover=null;this.ind=null;this.sig='';
@@ -413,7 +474,7 @@ class Pane{
   }
   setBars(full,fit=true){
     const vm=this.mode==='vaft',V=vm&&full.length?vaft(full):null,I=full.length&&!vm?indicator(full):null,s=vm?Math.max(0,full.length-VBARS):startIdx(full),bars=full.slice(s);
-    this.bars=bars;
+    this.bars=bars;this.auto=null;
     this.vd=V&&{trend:V.trend.slice(s),up:V.up.slice(s),lo:V.lo.slice(s),sq:V.sq.slice(s)};
     this.vsg=V?V.sig.filter(e=>e.i>=s).map(e=>({i:e.i-s,d:e.d})):[];
     const F=vm&&full.length?fcc(full):null;
@@ -572,11 +633,16 @@ class Pane{
     }else s.forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()});
     ctx.setLineDash([]);
   }
+  drawAuto(ctx,W,H,ts){
+    const B=this.bars;if(!B||B.length<20)return;
+    const pw=W-this.chart.priceScale('right').width();
+    autoPaint(ctx,autoGet(B,this.intra?5:4),i=>ts.logicalToCoordinate(i),p=>this.cs.priceToCoordinate(p),pw,H,B[B.length-1].close,{tl:autoTL,sr:autoSR,maxZ:isMob()?3:6});
+  }
   draw(){
     const W=this.el.clientWidth,H=this.el.clientHeight;if(!W||!H)return;
     const ps=this.chart.priceScale('right');if(!ps.options().autoScale)ps.applyOptions({autoScale:true});
     const ts=this.chart.timeScale(),r=ts.getVisibleLogicalRange();
-    const sig=[W,H,r&&r.from,r&&r.to,this.cs.priceToCoordinate(1),this.cs.priceToCoordinate(1000),this.dr.length,(this.pend?JSON.stringify(this.pend):''),this.hover&&this.hover.x+','+this.hover.y,showInd,showDays,vCloud,VEV,this.bars.length].join('|');
+    const sig=[W,H,r&&r.from,r&&r.to,this.cs.priceToCoordinate(1),this.cs.priceToCoordinate(1000),this.dr.length,(this.pend?JSON.stringify(this.pend):''),this.hover&&this.hover.x+','+this.hover.y,showInd,showDays,vCloud,VEV,autoTL,autoSR,this.bars.length].join('|');
     if(sig===this.sig||!W||!H)return;this.sig=sig;
     const ctx=this.cv.getContext('2d'),d=window.devicePixelRatio||1;
     ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,W,H);
@@ -623,6 +689,7 @@ class Pane{
         ctx.fillStyle=CLOUD[I.state[i]];ctx.beginPath();ctx.moveTo(x0,f0);ctx.lineTo(x1,f1);ctx.lineTo(x1,s1);ctx.lineTo(x0,s0);ctx.closePath();ctx.fill();
       }
     }
+    if(autoTL||autoSR)this.drawAuto(ctx,W,H,ts);
     this.dr.forEach(z=>this.paint(ctx,z,false));
     if(this.pend&&this.hover)this.paint(ctx,this.pend.t==='rr'&&this.pend.b?{...this.pend,s:this.hover.pos.p}:{...this.pend,b:this.hover.pos},true);
     ctx.restore();
@@ -1095,6 +1162,9 @@ $('days').onchange=()=>{store.set('days',$('days').value);if(tab==='m')loadMulti
 $('tc').onchange=()=>{trendCandles=$('tc').checked;PANES.forEach(p=>p.recolor())};
 $('sig').onchange=()=>{showSig=$('sig').checked;PANES.forEach(p=>p.markCross())};
 $('shade').onchange=()=>{showDays=$('shade').checked;PANES.forEach(p=>p.sig='')};
+$('atl').checked=autoTL;$('asr').checked=autoSR;
+$('atl').onchange=()=>{autoTL=$('atl').checked;store.set('gatl',autoTL?'1':'0');PANES.forEach(p=>p.sig='')};
+$('asr').onchange=()=>{autoSR=$('asr').checked;store.set('gasr',autoSR?'1':'0');PANES.forEach(p=>p.sig='')};
 const setIndVis=v=>{showInd=v;$('ind').checked=v;$('vind').checked=v;PANES.forEach(p=>p.setInd())};
 $('ind').onchange=()=>setIndVis($('ind').checked);$('vind').onchange=()=>setIndVis($('vind').checked);
 
@@ -1603,6 +1673,8 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <label id="dlab">Days <input id="days" type="number" min="2" max="30" value="5" style="width:56px"></label>
  <label><input type="checkbox" id="c4">72/89</label>
  <label><input type="checkbox" id="c5">180/200</label>
+ <label title="Auto trendlines from recent swing lows / highs"><input type="checkbox" id="atl" checked>Auto TL</label>
+ <label title="Auto support / resistance zones from clustered swings"><input type="checkbox" id="asr" checked>Auto S/R</label>
  <label><input type="checkbox" id="live" checked>Live</label><label title="BUY: green candle + 5/12 and 34/50 clouds bullish and well separated. SELL: the exact opposite (red candle + both clouds bearish and well separated). No new signal within Cooldown candles of the last one."><input type="checkbox" id="sig" checked>Signals</label><label title="Draw Entry, Stop, T1 (1.5R) and T2 (3R) for the latest BUY/SELL while the trade is still open"><input type="checkbox" id="slv" checked>Stop/Targets</label><label title="Show the Not chasing / Relative strength / ADX label table on the chart"><input type="checkbox" id="qlb" checked>Metrics</label><select id="sflt" title="Optional extra filter for BUY and SELL: TestLine rising (BUY) / falling (SELL), or close above (BUY) / below (SELL) the 180/200 cloud"><option value="off">Signal filter: off</option><option value="rise">TestLine rising/falling</option><option value="cloud">Beyond 180/200</option></select><label title="BUY needs the 5/12 and 34/50 clouds bullish with a gap of at least this many ATR (0 = just bullish)">Gap ATR <input id="sgap" type="number" min="0" max="2" step="0.05" value="0.1" style="width:56px"></label><label title="After a BUY or SELL, hide any new signal for this many candles (0 = off)">Cooldown <input id="scd" type="number" min="0" max="100" step="1" value="10" style="width:52px"></label><label title="Account size in $ for position sizing (shown on the Entry line)">Acct $ <input id="acct" type="number" min="0" step="1000" value="25000" style="width:76px"></label><label title="Percent of the account risked per trade">Risk % <input id="rpct" type="number" min="0" max="10" step="0.05" value="0.5" style="width:56px"></label><label title="Cap one position at this % of the account (0 = no cap)">Max pos % <input id="mpos" type="number" min="0" max="100" step="5" value="25" style="width:56px"></label><label title="Daily guardrail: the trade-plan button locks after this many trades taken today (0 = off)">Max trades/day <input id="tkmax" type="number" min="0" max="20" value="3" style="width:46px"></label><span class="chip" id="ws">○ stream off</span><span class="chip" id="syn" title="Cloud sync (drawings + price alerts)">☁ local only</span>
  <button id="zi" title="Zoom in (+)">＋</button><button id="zo" title="Zoom out (−)">－</button><button id="zf" title="Fit all (0)">Fit</button><button id="expimg" title="Export current chart as image">Export Image</button>
  <button class="p" id="go">Load</button>
@@ -1962,6 +2034,72 @@ function render(d,g,pw,st,v=V1){
  case'text':dx.font='13px system-ui,sans-serif';dx.fillStyle=c;dx.fillText(d.text,a.x,a.y)}
  if(st){handles(d,g,pw).forEach(h=>{dx.beginPath();dx.arc(h.x,h.y,st>1?TOL+1:TOL-2,0,7);dx.fillStyle='#fff';dx.fill();dx.lineWidth=2;dx.strokeStyle=c;dx.stroke()})}}
 
+
+// ---------- Auto trendlines + support/resistance zones (swing based) ----------
+const AUTOC=new WeakMap();
+function autoSwings(b,k){const hi=[],lo=[];
+ for(let i=k;i<b.length-k;i++){let isH=true,isL=true;
+  for(let j=i-k;j<=i+k;j++){if(j===i)continue;if(b[j].high>=b[i].high)isH=false;if(b[j].low<=b[i].low)isL=false;if(!isH&&!isL)break}
+  if(isH)hi.push({i,p:b[i].high});if(isL)lo.push({i,p:b[i].low})}
+ return{hi,lo}}
+function autoCalc(bars,k){
+ const n=bars.length,out={lines:[],zones:[]};if(n<20)return out;
+ const sw=autoSwings(bars,k),last=bars[n-1].close;
+ const pick=(pts,support)=>{const cand=pts.slice(-7);let best=null;
+  for(let a=0;a<cand.length-1;a++)for(let c=a+1;c<cand.length;c++){
+   const A=cand[a],B=cand[c],slope=(B.p-A.p)/(B.i-A.i);
+   if(support?slope<=0:slope>=0)continue;
+   let ok=true,touches=2;
+   for(let i=A.i;i<n;i++){const lv=A.p+slope*(i-A.i),tol=lv*0.004,x=support?bars[i].low:bars[i].high;
+    if(support?x<lv-tol*1.5:x>lv+tol*1.5){ok=false;break}
+    if(i>B.i&&Math.abs(x-lv)<=tol)touches++}
+   if(!ok)continue;
+   const score=touches*2+(B.i/n)*3+Math.min(1,(B.i-A.i)/20);
+   if(!best||score>best.score)best={A,B,score,support}}
+  return best};
+ for(const sup of[true,false]){const r=pick(sup?sw.lo:sw.hi,sup);if(r)out.lines.push({support:sup,a:r.A,b:r.B})}
+ let atr=0;const m=Math.min(14,n-1);
+ for(let i=n-m;i<n;i++)atr+=Math.max(bars[i].high-bars[i].low,Math.abs(bars[i].high-bars[i-1].close),Math.abs(bars[i].low-bars[i-1].close));
+ atr/=m;
+ const tol=Math.max(atr*0.6,last*0.004),pts=sw.hi.concat(sw.lo).sort((a,b)=>a.p-b.p),cl=[];
+ for(const pt of pts){const c=cl[cl.length-1];if(c&&pt.p-c.hi<=tol){c.hi=pt.p;c.items.push(pt)}else cl.push({lo:pt.p,hi:pt.p,items:[pt]})}
+ const zs=cl.filter(c=>c.items.length>=2).map(c=>{
+  const first=Math.min(...c.items.map(x=>x.i)),mid=(c.lo+c.hi)/2,pad=Math.max(tol*0.25,(c.hi-c.lo)*0.1);
+  return{lo:c.lo-pad,hi:c.hi+pad,n:c.items.length,i0:first,dist:Math.abs(mid-last)}});
+ zs.sort((a,b)=>(b.n*2-b.dist/last*40)-(a.n*2-a.dist/last*40));
+ out.zones=zs.slice(0,6);return out}
+function autoGet(bars,k){const n=bars.length,l=bars[n-1],s=n+'|'+l.close+'|'+l.high+'|'+l.low+'|'+k;
+ const c=AUTOC.get(bars);if(c&&c.s===s)return c.a;const a=autoCalc(bars,k);AUTOC.set(bars,{s,a});return a}
+const autoFmt=v=>v>=1?v.toFixed(2):v.toFixed(4);
+const autoHex=(h,a)=>{const n=parseInt(h.slice(1),16);return'rgba('+(n>>16)+','+(n>>8&255)+','+(n&255)+','+a+')'};
+// X(logicalIndex)->px, Y(price)->px, pw = plot width (excludes the price scale)
+function autoPaint(ctx,A,X,Y,pw,H,last,o){
+ ctx.save();ctx.beginPath();ctx.rect(0,0,pw,H);ctx.clip();
+ if(o.sr){ctx.font='10px system-ui,sans-serif';ctx.textBaseline='middle';
+  for(const z of A.zones.slice(0,o.maxZ||6)){
+   const y1=Y(z.hi),y2=Y(z.lo);if(y1==null||y2==null)continue;
+   const x0=X(z.i0),x=Math.max(0,x0==null?0:x0),res=(z.lo+z.hi)/2>=last,col=res?'#f87171':'#34d399',hh=Math.max(1,y2-y1);
+   ctx.fillStyle=autoHex(col,.14);ctx.fillRect(x,y1,pw-x,hh);
+   ctx.strokeStyle=autoHex(col,.55);ctx.lineWidth=1;ctx.setLineDash([]);
+   ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(pw,y1);ctx.moveTo(x,y2);ctx.lineTo(pw,y2);ctx.stroke();
+   if(!o.noLabel){const t=(res?'R ':'S ')+autoFmt(z.lo)+'\u2013'+autoFmt(z.hi)+' \u00b7 '+z.n+'x',tw=ctx.measureText(t).width+8,ly=(y1+y2)/2;
+    ctx.fillStyle=autoHex(col,.9);ctx.fillRect(pw-4-tw,ly-7,tw,14);ctx.fillStyle='#06100f';ctx.textAlign='left';ctx.fillText(t,pw-4-tw+4,ly+.5)}}}
+ if(o.tl){ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  for(const l of A.lines){
+   const ax=X(l.a.i),ay=Y(l.a.p),bx=X(l.b.i),by=Y(l.b.p);if(ax==null||ay==null||bx==null||by==null)continue;
+   const dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy)||1,s=(pw+H)*4/len;
+   ctx.strokeStyle=l.support?'#34d399':'#f87171';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+dx*s,ay+dy*s);ctx.stroke()}
+  ctx.setLineDash([])}
+ ctx.restore()}
+const AUTO={tl:store.get('catl')!=='0',sr:store.get('casr')!=='0'};
+$('atl').checked=AUTO.tl;$('asr').checked=AUTO.sr;
+$('atl').onchange=()=>{AUTO.tl=$('atl').checked;store.set('catl',AUTO.tl?'1':'0')};
+$('asr').onchange=()=>{AUTO.sr=$('asr').checked;store.set('casr',AUTO.sr?'1':'0')};
+function autoDraw(cx,ts,ser,rw,pw,h){
+ const n=rw.length;if(n<20)return;
+ const daily=(rw[n-1].time-rw[0].time)/(n-1)>=72000,small=h<260;
+ autoPaint(cx,autoGet(rw,daily?4:5),i=>ts.logicalToCoordinate(i),p=>ser.priceToCoordinate(p),pw,h,rw[n-1].close,{tl:AUTO.tl,sr:AUTO.sr,maxZ:small?3:6,noLabel:h<150})}
+
 // ---------- draw loop: day bands + clouds (behind), drawings (above) ----------
 function back(cx,ts,ser,rw,cl,w,h,pw,ex,nb){
  const X=l=>ts.logicalToCoordinate(l),Y=p=>ser.priceToCoordinate(p),bs=ts.options().barSpacing;
@@ -1977,7 +2115,8 @@ function back(cx,ts,ser,rw,cl,w,h,pw,ex,nb){
    const x0=X(i-1),x1=X(i);
    cx.fillStyle=hex(a2>=b2?c.u:c.d,c.a);
    cx.beginPath();cx.moveTo(x0,y[0]);cx.lineTo(x1,y[2]);cx.lineTo(x1,y[3]);cx.lineTo(x0,y[1]);cx.closePath();cx.fill()}});
- cx.restore()}
+ cx.restore();
+ if(AUTO.tl||AUTO.sr)autoDraw(cx,ts,ser,rw,pw,h)}
 const cv=$('cv'),cx=cv.getContext('2d'),dv=$('dv');
 function draw(){
  const box=$('box'),w=box.clientWidth,h=box.clientHeight,dpr=devicePixelRatio||1;
