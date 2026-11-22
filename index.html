@@ -1846,7 +1846,7 @@ const COL={up:'#2e9e4f',dn:'#f23645',mid:'#2962ff',neu:'#90a4ae'};
 const STEP={'15Min':900,'30Min':1800,'1Hour':3600,'1Day':86400};
 const effD=d=>$('tf').value==='1Day'?Math.max(d,250):d; // daily bars: always load ~1 year so indicators are warmed up (Days box untouched)
 let rows=[],raw=[],clouds=[],lines=[],D=[],hist=[],SYM='',tool='sel',selD=null,hovD=null,cur=null,drag=null,hide=false,magnet=false,step=900,busy=false,tab='C',loadId=0,ORDER=[];
-const WL0=[ "AAPL", "ACB", "ACN", "AMD", "AMZN", "ASTS", "BA", "BABA", "BE", "CCJ", "CLOV", "CLSK", "CRWD", "DELL", "ENPH", "FCX", "FSLR", "GOOG", "GOOGL", "HIMS", "HOOD", "IREN", "IWM", "JMIA", "JNJ", "JPM", "KHC", "KMI", "KO", "KSS", "LLY", "LOW", "LULU", "LUV", "LVS", "LYFT", "MARA", "MBLY", "MBOT", "META", "MNDY", "MO", "MRK", "MRVL", "MSFT", "NFLX", "NVDA", "PLTR", "QQQ", "IONQ", "RIOT", "SMCI", "SOUN", "SPY", "T", "TSLA", "UAL", "UBER", "XOM"];
+const WL0=[ "AAPL", "ACB", "ACN", "AMD", "AMZN", "ASTS", "BA", "BABA", "BE", "CCJ", "CLOV", "CLSK", "CRWD", "DELL", "ENPH", "FCX", "FSLR", "GOOG", "GOOGL", "HIMS", "HOOD", "IREN", "IWM", "JMIA", "JNJ", "JPM", "KHC", "KMI", "KO", "KSS", "LLY", "LOW", "LULU", "LUV", "LVS", "LYFT", "MARA", "MBLY", "META", "MNDY", "MO", "MRK", "MRVL", "MSFT", "NFLX", "NVDA", "PLTR", "QQQ", "IONQ", "RIOT", "SMCI", "SOUN", "SPY", "T", "TSLA", "UAL", "UBER", "XOM"];
 const SYM_OK=/^[A-Z][A-Z0-9.\-]{0,9}$/;
 // Editable watchlist (+ Watch / − Watch), saved in this browser and carried between devices by Export / Import JSON.
 let wl=[];try{wl=JSON.parse(store.get('cw')||'null')}catch(e){console.debug(e)}
