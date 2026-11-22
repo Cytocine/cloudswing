@@ -959,21 +959,21 @@ function renderRowsCore(){
   if(!W&&order&&order===lastOrder){
     // same rows in same order: only touch price cells + selection, scroll position untouched
     const trs=$('rows').children;
-    list.forEach((g,i)=>{const tr=trs[i];if(!tr)return;const sc=tr.children[0],bt=W?'':buyTag(g.symbol);if(sc.dataset.b!==bt){sc.dataset.b=bt;sc.innerHTML=`<span class="sym">${g.symbol}</span>${bt}`}if(W&&tr.children[2]){const cc=tr.children[1],cv=chgCell(g),bc=tr.children[2],bv=barsCell(g.symbol);if(cc.textContent!==cv){cc.textContent=cv;cc.className=chgOf(g)>=0?'up':'down'}if(bc.textContent!==bv)bc.textContent=bv}if(!W){const c=tr.children[1],v=px(g.price);if(c.textContent!==v)c.textContent=v}tr.classList.toggle('sel',g.symbol===sel);const ch=$('chips').children[i];if(ch)ch.classList.toggle('sel',g.symbol===sel)});
+    list.forEach((g,i)=>{const tr=trs[i];if(!tr)return;const sc=tr.children[0],bt=W?'':buyTag(g.symbol);if(sc.dataset.b!==bt){sc.dataset.b=bt;sc.innerHTML=`<span class="sym">${escH(g.symbol)}</span>${bt}`}if(W&&tr.children[2]){const cc=tr.children[1],cv=chgCell(g),bc=tr.children[2],bv=barsCell(g.symbol);if(cc.textContent!==cv){cc.textContent=cv;cc.className=chgOf(g)>=0?'up':'down'}if(bc.textContent!==bv)bc.textContent=bv}if(!W){const c=tr.children[1],v=px(g.price);if(c.textContent!==v)c.textContent=v}tr.classList.toggle('sel',g.symbol===sel);const ch=$('chips').children[i];if(ch)ch.classList.toggle('sel',g.symbol===sel)});
   }else{
     const st=side.scrollTop;
     if(W&&compactView){
       const tip=g=>{const t=trend[g.symbol],h=htf[g.symbol];return g.symbol+' '+chgCell(g)+(t&&t.buy!=null?' · BUY '+(t.buy===0?'now':t.buy+' bars ago'):'')+(t&&t.gap>-999?' · gap '+gapCell(g.symbol):'')+(riskOf(g.symbol)<999?' · risk '+riskOf(g.symbol).toFixed(1)+'%':'')+(h?' · HTF '+(h.bull?'✓':'✗'):'')};
-      const chip=g=>{const c=chgOf(g),cs=c<=-999?'–':(c>=0?'▲+':'▼')+c.toFixed(1);return `<span class="cc ${c>=0?'u':'d'}${g.symbol===sel?' sel':''}${buyOf(g)!=null&&REG.weak?' wk':''}" role="button" aria-label="${g.symbol} ${cs}%${buyOf(g)!=null?', BUY signal':''}" data-s="${g.symbol}" title="${escH(tip(g))}"><b>${g.symbol}</b><i class="${c>=0?'up':'down'}">${cs}</i><span class="xb" aria-hidden="true" data-x="${g.symbol}" title="Hide ${g.symbol} (Delete key)">✕</span></span>`};
+      const chip=g=>{const c=chgOf(g),cs=c<=-999?'–':(c>=0?'▲+':'▼')+c.toFixed(1);return `<span class="cc ${c>=0?'u':'d'}${g.symbol===sel?' sel':''}${buyOf(g)!=null&&REG.weak?' wk':''}" role="button" aria-label="${escH(g.symbol)} ${cs}%${buyOf(g)!=null?', BUY signal':''}" data-s="${escH(g.symbol)}" title="${escH(tip(g))}"><b>${escH(g.symbol)}</b><i class="${c>=0?'up':'down'}">${cs}</i><span class="xb" aria-hidden="true" data-x="${escH(g.symbol)}" title="Hide ${escH(g.symbol)} (Delete key)">✕</span></span>`};
       let h='',cur=[];const flush=()=>{if(cur.length)h+=`<tr><td colspan="7" class="cw"><div class="cgrid">${cur.map(chip).join('')}</div></td></tr>`;cur=[]};
       list.forEach(g=>{if(hdr[g.symbol]){flush();h+=hdr[g.symbol]}if(!(hdr_on&&COLSEC.has(secOf(g.symbol))))cur.push(g)});flush();
       $('rows').innerHTML=h||emptyRow();
     }else
-    $('rows').innerHTML=list.map(g=>`${hdr[g.symbol]||''}${hdr_on&&COLSEC.has(secOf(g.symbol))?'':`<tr class="row ${g.symbol===sel?'sel':''}${buyOf(g)!=null&&REG.weak?' wk':''}" data-s="${g.symbol}"><td><span class="sym">${g.symbol}</span>${W?'':buyTag(g.symbol)}</td>${W?'':`<td>${px(g.price)}</td>`}${W?`<td class="${chgOf(g)>=0?'up':'down'}">${chgCell(g)}</td><td class="up">${barsCell(g.symbol)}</td><td>${htfCell(g.symbol)}</td><td>${gapCell(g.symbol)}</td><td>${riskCell(g.symbol)}</td><td class="xc"><button class="xb" data-x="${g.symbol}" title="Hide ${g.symbol}" aria-label="Hide ${g.symbol}">✕</button></td>`:''}</tr>`}`).join('')
+    $('rows').innerHTML=list.map(g=>`${hdr[g.symbol]||''}${hdr_on&&COLSEC.has(secOf(g.symbol))?'':`<tr class="row ${g.symbol===sel?'sel':''}${buyOf(g)!=null&&REG.weak?' wk':''}" data-s="${escH(g.symbol)}"><td><span class="sym">${escH(g.symbol)}</span>${W?'':buyTag(g.symbol)}</td>${W?'':`<td>${px(g.price)}</td>`}${W?`<td class="${chgOf(g)>=0?'up':'down'}">${chgCell(g)}</td><td class="up">${barsCell(g.symbol)}</td><td>${htfCell(g.symbol)}</td><td>${gapCell(g.symbol)}</td><td>${riskCell(g.symbol)}</td><td class="xc"><button class="xb" data-x="${escH(g.symbol)}" title="Hide ${escH(g.symbol)}" aria-label="Hide ${escH(g.symbol)}">✕</button></td>`:''}</tr>`}`).join('')
       ||emptyRow();
     side.scrollTop=st;lastOrder=order;
     const cs=$('chips'),cl=cs.scrollLeft;
-    cs.innerHTML=list.map(g=>`<button class="chip${g.symbol===sel?' sel':''}" data-s="${g.symbol}">${g.symbol}${W&&buyOf(g)!=null?` <small>▲${buyOf(g)}</small>`:''}</button>`).join('')||'<span class="mi">No hits</span>';
+    cs.innerHTML=list.map(g=>`<button class="chip${g.symbol===sel?' sel':''}" data-s="${escH(g.symbol)}">${escH(g.symbol)}${W&&buyOf(g)!=null?` <small>▲${buyOf(g)}</small>`:''}</button>`).join('')||'<span class="mi">No hits</span>';
     cs.scrollLeft=cl;
   }
   $('flt-note').textContent=!haveA&&(on||fb)?'RVOL / trend filters need Alpaca keys':(fb&&!trendReady?'Scanning trend…':`${list.length}/${gainers.length} shown`);
@@ -1204,7 +1204,7 @@ function showTab(t){
 }
 function mkCell(sym){
   const d=document.createElement('div');d.className='cell';
-  d.innerHTML=`<div class="chead"><b>${sym}</b><span class="mi"></span><span style="margin-left:auto"></span><button data-a="open">Open</button><button data-a="rm" aria-label="Remove ${sym}">✕</button></div><div class="cbody"></div>`;
+  d.innerHTML=`<div class="chead"><b>${escH(sym)}</b><span class="mi"></span><span style="margin-left:auto"></span><button data-a="open">Open</button><button data-a="rm" aria-label="Remove ${escH(sym)}">✕</button></div><div class="cbody"></div>`;
   $('mgrid').appendChild(d);
   cells[sym]={el:d,pane:new Pane(d.querySelector('.cbody')),mi:d.querySelector('.mi')};
   d.onclick=e=>{const a=e.target.dataset.a;
@@ -1321,7 +1321,7 @@ function renderV(){
   }).join('')||`<tr><td colspan="4" class="msg">${haveA?(vBusy?'Scanning 2H…':vReady?'No signals within '+N+' bars.':'Press Scan to look for signals.'):'Add Alpaca keys to scan.'}</td></tr>`;
   {const sg=vs.join();if(haveA&&tab==='v'&&sg&&sg!==vTried&&!vBusy){vTried=sg;setTimeout(()=>loadV(),0)}}
   const cs=$('chips'),cl=cs.scrollLeft;
-  cs.innerHTML=list.map(o=>`<button class="chip${o.s===sel?' sel':''}" data-s="${o.s}">${o.s}${o.v&&o.v.ago!=null?` <small>${o.v.dir>0?'▲':'▼'}${o.v.ago}</small>`:''}${o.v&&o.v.d1!=null?` <small class="${o.v.d1>0?'up':'down'}">1D${o.v.d1>0?'▲':'▼'}</small>`:''}</button>`).join('')||'<span class="mi">No hits</span>';
+  cs.innerHTML=list.map(o=>`<button class="chip${o.s===sel?' sel':''}" data-s="${escH(o.s)}">${escH(o.s)}${o.v&&o.v.ago!=null?` <small>${o.v.dir>0?'▲':'▼'}${o.v.ago}</small>`:''}${o.v&&o.v.d1!=null?` <small class="${o.v.d1>0?'up':'down'}">1D${o.v.d1>0?'▲':'▼'}</small>`:''}</button>`).join('')||'<span class="mi">No hits</span>';
   cs.scrollLeft=cl;
   $('flt-note').textContent=!haveA?'VAFT needs Alpaca keys':(vBusy?'Scanning 2H…':vReady?`${list.length}/${all.length} shown`:'Not scanned yet');
 }
@@ -1405,7 +1405,7 @@ window.loadReg=async force=>{if(!(akey()&&asec())||(!force&&Date.now()-regAt<18e
     for(const x of['SPY','QQQ']){const bars=clean((all[x]||[]).map(b=>({time:etSec(Date.parse(b.t)),open:b.o,high:b.h,low:b.l,close:b.c,volume:b.v}))),n=bars.length-1;if(bars.length<14)continue;
       const I=indicator(bars),ld=Math.floor(bars[n].time/86400);let pc=null;for(let k=n;k>=0;k--)if(Math.floor(bars[k].time/86400)<ld){pc=bars[k].close;break}
       RS[x]={ok:I.avwap[n]>0&&I.bull[n]&&bars[n].close>I.avwap[n],chg:pc?(bars[n].close/pc-1)*100:null}}
-    paint()}catch(e){}};
+    paint()}catch(e){console.debug(e)}};
 $('dimw').onchange=paint;setInterval(paint,3e4);paint();
 setInterval(()=>{if(!document.hidden)window.loadReg()},60e3);setTimeout(()=>window.loadReg(),600);
 // ---- 10. journal ----
@@ -1494,6 +1494,10 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;for(const [b,
 <script>window.LightweightCharts||document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"><\/script>')</scr⁣ipt>
 <style>
 :root{--bg:#fff;--ink:#131722;--mut:#5b6270;--line:#e3e6ec;--panel:#f6f7f9;--up:#1a7035;--dn:#c01d2c;--acc:#2962ff}
+html,body{overscroll-behavior:contain}#box,#ch{overscroll-behavior:contain}
+button:focus-visible,select:focus-visible,input:focus-visible,[role=button]:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#pp:focus-visible,#pps:focus-visible,#swz:focus-visible{outline-color:#000;outline-offset:-3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overscroll-behavior:none}
 body{font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);height:100vh;height:100dvh}
@@ -1591,7 +1595,8 @@ body.nohdr #hshow{display:block}
  #pp,#pps{display:block;position:absolute;z-index:6;left:6px;width:40px;height:40px;padding:0;background:#fffffff2;font-size:16px}
  #pp{top:70px}#pps{top:114px;font-size:12px;font-weight:700}
  #pp.on{background:var(--acc);color:#fff;border-color:var(--acc)}
- #swz{display:flex;align-items:center;justify-content:center;position:absolute;z-index:5;left:0;right:0;bottom:0;height:34px;touch-action:pan-y;background:#0000000d;color:#667;font-size:11px;letter-spacing:.5px;user-select:none}
+ #swz{display:flex;align-items:center;justify-content:space-between;position:absolute;z-index:5;left:0;right:0;bottom:0;height:46px;padding:0 18px;touch-action:pan-y;background:var(--acc);color:#fff;font-size:13px;font-weight:700;letter-spacing:.4px;user-select:none;box-shadow:0 -2px 8px #0003;border-radius:12px 12px 0 0}
+ #swz b{font-size:30px;line-height:1;font-weight:400}#swz span{opacity:.95}
  #tb{display:none;flex-direction:row;left:52px;right:6px;top:26px;overflow-x:auto;overflow-y:hidden;max-height:none;max-width:none}
  #tb.open{display:flex}
  #tb button,#tb select,#tb input{width:40px;height:36px;min-height:0;flex:none;font-size:13px}
@@ -1704,10 +1709,10 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
  <aside id="wl" aria-label="Watchlist"></aside>
  <section id="sc">
   <div id="stats"></div>
-  <div id="box"><canvas id="cv"></canvas><div id="ch"></div><canvas id="dv"></canvas><div id="leg"></div>
+  <div id="box"><canvas id="cv" aria-hidden="true"></canvas><div id="ch" role="img" aria-label="Price chart. Use left and right arrow keys, or swipe the bottom bar, to change symbol."></div><canvas id="dv"></canvas><div id="leg"></div>
    <button id="tbt" title="Drawing tools">✎</button>
    <button id="pp" title="Auto-play charts">▶</button><button id="pps" title="Seconds per chart">8s</button>
-   <div id="swz">‹ swipe here for prev / next chart ›</div>
+   <div id="swz" role="group" aria-label="Swipe left or right for next or previous chart"><b aria-hidden="true">‹</b><span>SWIPE for prev / next chart</span><b aria-hidden="true">›</b></div>
    <div id="tb">
     <button data-t="sel" title="Select / move (Esc)">↖</button>
     <button data-t="trend" title="Trend line">╱</button>
@@ -1825,10 +1830,10 @@ if(!window.LightweightCharts){document.getElementById('msg').textContent='Could 
 const $=id=>document.getElementById(id);
 
 // ---------- storage (keys, settings, drawings persist in this browser) ----------
-let ls=null,lsName='';for(const s of['localStorage','sessionStorage']){try{const o=window[s];o.setItem('_t','1');o.removeItem('_t');ls=o;lsName=s;break}catch(e){}}
+let ls=null,lsName='';for(const s of['localStorage','sessionStorage']){try{const o=window[s];o.setItem('_t','1');o.removeItem('_t');ls=o;lsName=s;break}catch(e){console.debug(e)}}
 const mem={};
-const store={get(k){try{if(ls){const v=ls.getItem(k);if(v!==null)return v}}catch(e){}return k in mem?mem[k]:null},
- set(k,v){mem[k]=v;try{ls&&ls.setItem(k,v)}catch(e){}}};
+const store={get(k){try{if(ls){const v=ls.getItem(k);if(v!==null)return v}}catch(e){console.debug(e)}return k in mem?mem[k]:null},
+ set(k,v){mem[k]=v;try{ls&&ls.setItem(k,v)}catch(e){console.debug(e)}}};
 if(lsName!=='localStorage')$('svNote').textContent='Browser storage is blocked in this view, so nothing will be remembered. Open the downloaded file directly in Chrome, Edge, Firefox or Safari.';
 
 const CL=[
@@ -1844,13 +1849,13 @@ let rows=[],raw=[],clouds=[],lines=[],D=[],hist=[],SYM='',tool='sel',selD=null,h
 const WL0=[ "AAPL", "ACB", "ACN", "AMD", "AMZN", "ASTS", "BA", "BABA", "BE", "CCJ", "CLOV", "CLSK", "CRWD", "DELL", "ENPH", "FCX", "FSLR", "GOOG", "GOOGL", "HIMS", "HOOD", "IREN", "IWM", "JMIA", "JNJ", "JPM", "KHC", "KMI", "KO", "KSS", "LLY", "LOW", "LULU", "LUV", "LVS", "LYFT", "MARA", "MBLY", "MBOT", "META", "MNDY", "MO", "MRK", "MRVL", "MSFT", "NFLX", "NVDA", "PLTR", "QQQ", "IONQ", "RIOT", "SMCI", "SOUN", "SPY", "T", "TSLA", "UAL", "UBER", "XOM"];
 const SYM_OK=/^[A-Z][A-Z0-9.\-]{0,9}$/;
 // Editable watchlist (+ Watch / − Watch), saved in this browser and carried between devices by Export / Import JSON.
-let wl=[];try{wl=JSON.parse(store.get('cw')||'null')}catch(e){}
+let wl=[];try{wl=JSON.parse(store.get('cw')||'null')}catch(e){console.debug(e)}
 wl=Array.isArray(wl)?[...new Set(wl.map(x=>String(x).trim().toUpperCase()).filter(x=>SYM_OK.test(x)))]:[];
 if(!wl.length)wl=WL0.slice();
 const saveWL=()=>store.set('cw',JSON.stringify(wl));
 saveWL();
 // Focus: star a few symbols and switch Focus on to track only those (the full list stays saved).
-let fav=[];try{fav=JSON.parse(store.get('cfav')||'[]')}catch(e){}
+let fav=[];try{fav=JSON.parse(store.get('cfav')||'[]')}catch(e){console.debug(e)}
 fav=Array.isArray(fav)?fav.filter(k=>wl.includes(k)):[];
 let focus=store.get('cfocus')==='1';
 const saveFav=()=>{store.set('cfav',JSON.stringify(fav));store.set('cfocus',focus?'1':'0')};
@@ -1901,10 +1906,18 @@ function l2t(l){return l2tR(rows,step,l)}
 // ---------- Alpaca ----------
 const H=()=>({'APCA-API-KEY-ID':$('key').value.trim(),'APCA-API-SECRET-KEY':$('sec').value.trim()});
 async function get(u){const px=$('px').value.trim();let h=H();if(px){u=u.replace('https://data.alpaca.markets',px.replace(/\/$/,''));h=tokH()}const r=await fetch(u,{headers:h});if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,160));return r.json()}
+function xe(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function getBars(sym,tf,start,end){let out=[],tok='';
  do{const j=await get(`https://data.alpaca.markets/v2/stocks/${sym}/bars?timeframe=${tf}&start=${start}${end?'&end='+end:''}&limit=10000&adjustment=split&sort=asc&feed=${$('feed').value}`+(tok?`&page_token=${tok}`:''));
   out=out.concat(j.bars||[]);tok=j.next_page_token}while(tok);
  return out}
+const BARS=new Map();
+async function barsC(sym,tf,days,force){const k=sym+'|'+tf+'|'+days,c=BARS.get(k);
+ if(c&&!force&&Date.now()-c.at<60000)return c.rw.map(b=>({...b}));
+ const rw=await getBars(sym,tf,startFor(days));BARS.set(k,{rw,at:Date.now()});if(BARS.size>16)BARS.delete(BARS.keys().next().value);return rw.map(b=>({...b}))}
+function prefetchNeighbors(){if(!hasKey()||document.hidden||tab!=='C'||!ORDER.length)return;
+ const tf=$('tf').value,days=effD(Math.max(2,+$('days').value||5)),i=ORDER.indexOf(SYM),n=ORDER.length;
+ [1,-1].forEach((d,j)=>setTimeout(()=>{const s=ORDER[(i+d+n)%n];if(s&&s!==SYM)barsC(s,tf,days).catch(()=>{})},400+j*600))}
 const startFor=d=>new Date(Date.now()-(d*7/5+5)*864e5).toISOString();
 
 // ---------- build + render ----------
@@ -1927,10 +1940,10 @@ function overlays(o){drawPlan();sigEnsure(SYM,rows.length?rows[0].time:0,drawPla
 function lvl(ser,old,lv,small){old.forEach(l=>ser.removePriceLine(l));
  return[]}
 function build(days,fit){
- step=STEP[$('tf').value]||900;try{TS().applyOptions({timeVisible:$('tf').value!=='1Day'})}catch(e){}
+ step=STEP[$('tf').value]||900;try{TS().applyOptions({timeVisible:$('tf').value!=='1Day'})}catch(e){console.debug(e)}
  const o=compute(raw,days);rows=o.rows;clouds=o.clouds;candle.setData(rows);test.setData(o.tl);overlays(o);
  lines=lvl(candle,lines,o.lv,false);stats(o.lv,o.tl,rows);leg(rows[rows.length-1]);
- if(fit){try{chart.priceScale('right').applyOptions({autoScale:true})}catch(e){}TS().fitContent()}}
+ if(fit){try{chart.priceScale('right').applyOptions({autoScale:true})}catch(e){console.debug(e)}TS().fitContent()}}
 function stats(lv,tl,r){
  const last=r[r.length-1].close,t=tl[tl.length-1];
  const cs=clouds.slice(0,3).map(c=>{const k=c.sv.length-1,b=c.sv[k]>=c.lv[k];return`<span class="chip"><i>${c.s}/${c.l}</i><span class="${b?'up':'dn'}">${b?'bull':'bear'}</span></span>`}).join('');
@@ -1948,9 +1961,10 @@ async function load(){
  saveSettings();
  if(sym!==SYM){SYM=sym;D=JSON.parse(store.get('dr_'+sym)||'[]');hist=[];selD=null;cur=null;drag=null;dpull(sym)}
  wsSync();mainDone=false;msg('Loading '+sym+'…');busy=true;const my=++loadId;
- try{const rw=await getBars(sym,$('tf').value,startFor(days));if(my!==loadId)return;raw=rw;lastRec=Date.now();
+ try{const rw=await barsC(sym,$('tf').value,days);if(my!==loadId)return;raw=rw;lastRec=Date.now();
   if(!raw.length){msg('No bars returned for '+sym+'. Check the symbol or feed.',1);return}
-  build(days,true);lastTf=$('tf').value;lastDays=days0;
+  build(days,true);lastTf=$('tf').value;lastDays=days0;(window.requestIdleCallback||setTimeout)(prefetchNeighbors);
+  try{chart.applyOptions({watermark:{visible:true,fontSize:window.innerWidth<=720?64:96,horzAlign:'center',vertAlign:'center',color:'rgba(60,70,90,.13)',text:sym+' · '+$('tf').selectedOptions[0].text}})}catch(e){console.debug(e)}
   msg(`${sym} · ${rows.length} bars · updated ${new Date().toLocaleTimeString()} · New York time`);
   document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===sym))
  }catch(e){msg(e.message,1)}finally{busy=false}}
@@ -2201,7 +2215,7 @@ $('wid').onchange=e=>{if(selD){selD.w=+e.target.value;save()}};
 
 // ---------- legend ----------
 function leg(b){if(!b)return;const up=b.close>=b.open;
- $('leg').innerHTML=`<b>${$('sym').value.toUpperCase()}</b> · ${$('tf').selectedOptions[0].text} &nbsp; O ${f(b.open)} H ${f(b.high)} L ${f(b.low)} <span class="${up?'up':'dn'}">C ${f(b.close)}</span>`}
+ $('leg').innerHTML=`<b>${xe($('sym').value.toUpperCase())}</b> · ${$('tf').selectedOptions[0].text} &nbsp; O ${f(b.open)} H ${f(b.high)} L ${f(b.low)} <span class="${up?'up':'dn'}">C ${f(b.close)}</span>`}
 chart.subscribeCrosshairMove(p=>leg((p.seriesData&&p.seriesData.get(candle))||rows[rows.length-1]));
 
 // ---------- watchlist: sorted by 30m trend ----------
@@ -2217,20 +2231,20 @@ async function trends(){
  const W=act();if(!hasKey()||!W.length)return;tAt=Date.now();
  try{const by={},st=new Date(Date.now()-14*864e5).toISOString(),ch=[];for(let i=0;i<W.length;i+=20)ch.push(W.slice(i,i+20));
   await pool(ch.map(g=>async()=>{Object.assign(by,await pageBars(g,'30Min',st))}),6);
-  T={};W.forEach(k=>{const r=by[k]&&trendOf(by[k]);if(r)T[k]=r});renderWL();if(!tReady){tReady=true;if(tab==='M')mk()}}catch(e){}}
+  T={};W.forEach(k=>{const r=by[k]&&trendOf(by[k]);if(r)T[k]=r});renderWL();if(!tReady){tReady=true;if(tab==='M')mk()}}catch(e){console.debug(e)}}
 function renderWL(){
  let L=act().slice();if($('bo').checked)L=L.filter(k=>T[k]&&T[k].s===4);else if($('br').checked)L=L.filter(k=>T[k]&&T[k].s===0);
  L.sort((a,b)=>((T[b]?T[b].s:-1)-(T[a]?T[a].s:-1))||((Q[b]?Q[b].c0:-99)-(Q[a]?Q[a].c0:-99)));ORDER=L.slice();
  const _af=document.activeElement,_fk=_af&&$('wl').contains(_af)?(_af.dataset.st?'st':'w')+'|'+(_af.dataset.st||_af.dataset.s):null;
  $('wl').innerHTML=L.map(k=>{const c=Q[k],t=T[k];
   const dots=t?`<span class="dots" title="30m: 8/9, 5/12, 34/50 clouds, then TestLine (green = bullish)">${[...t.c,t.t].map(v=>`<i class="${v?'g':'r'}"></i>`).join('')}</span>`:'';
-  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}${t&&t.s===0?' bear':''}" data-s="${k}" role="button" tabindex="0" aria-label="${k}${c?', '+f(c.p)+', '+(c.c>=0?'+':'')+c.c.toFixed(2)+' percent':''}"><span><i class="st" data-st="${k}" role="button" tabindex="0" aria-pressed="${fav.includes(k)}" aria-label="Star ${k} for Focus" title="Star / unstar for Focus">${fav.includes(k)?'★':'☆'}</i><b>${k}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No '+($('br').checked?'bearish':'bullish')+' stocks yet</div>';mhead();addBtn();
+  return`<div class="w ${k===(tab==='M'?msel:SYM)?'on':''} ${t&&t.s===4?'bull':''}${t&&t.s===0?' bear':''}" data-s="${xe(k)}" role="button" tabindex="0" aria-label="${xe(k)}${c?', '+f(c.p)+', '+(c.c>=0?'+':'')+c.c.toFixed(2)+' percent':''}"><span><i class="st" data-st="${xe(k)}" role="button" tabindex="0" aria-pressed="${fav.includes(k)}" aria-label="Star ${xe(k)} for Focus" title="Star / unstar for Focus">${fav.includes(k)?'★':'☆'}</i><b>${xe(k)}</b><br>${dots}</span><span class="r">${c?f(c.p)+`<br><span class="${c.c>=0?'up':'dn'}">${c.c>=0?'+':''}${c.c.toFixed(2)}%</span>`:''}</span></div>`}).join('')||'<div class="w">No '+($('br').checked?'bearish':'bullish')+' stocks yet</div>';mhead();addBtn();
  if(_fk){const[kk,s]=_fk.split('|');const e=$('wl').querySelector(kk==='st'?'[data-st="'+s+'"]':'.w[data-s="'+s+'"]');if(e)e.focus({preventScroll:true})}}
 $('wl').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.w,.st')){e.preventDefault();e.stopPropagation();e.target.click()}})
 async function quotes(){
  const W=act();if(!hasKey()||!W.length)return;
  try{const j=await get(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${W.join(',')}&feed=${$('feed').value}`);const s=j.snapshots||j,q={};
-  W.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){}}
+  W.forEach(k=>{const x=s[k];if(x&&x.latestTrade&&x.prevDailyBar){const c=(x.latestTrade.p/x.prevDailyBar.c-1)*100;q[k]={p:x.latestTrade.p,c,c0:c,pc:x.prevDailyBar.c}}});Q=q;renderWL()}catch(e){console.debug(e)}}
 $('wl').onclick=e=>{const st=e.target.closest('.st');
  if(st){const k=st.dataset.st;fav=fav.includes(k)?fav.filter(x=>x!==k):[...fav,k];saveFav();focusUI();if(focus){wlChanged()}else renderWL();return}
  const w=e.target.closest('.w');if(w&&w.dataset.s){if(tab==='M')mset(w.dataset.s);else if(tab==='S'){SC.sel=w.dataset.s;renderS()}else if(tab==='O'){OP.flt=OP.flt===w.dataset.s?'':w.dataset.s;renderO()}else if(tab==='P'){OP.flt=w.dataset.s;setTab('O')}else{$('sym').value=w.dataset.s;load()}}};
@@ -2256,7 +2270,7 @@ function rebuildKeep(){const days=curDays(),rng=TS().getVisibleLogicalRange(),n0
  build(days,false);
  if(rng&&n0){const idx=rows.findIndex(r=>r.time===oldT),k=rng.to>=n0-1?rows.length-n0:(idx<0?0:idx-(n0-1));if(k)TS().setVisibleLogicalRange({from:rng.from+k,to:rng.to+k})}}
 function setWs(t,c){$('ws').textContent=t;$('ws').style.color=c||''}
-function wsClose(){wsUnlock();if(ws){ws.onclose=null;try{ws.close()}catch(e){}}ws=null;wsOk=false;wsSubs=new Set();setWs('○ stream off')}
+function wsClose(){wsUnlock();if(ws){ws.onclose=null;try{ws.close()}catch(e){console.debug(e)}}ws=null;wsOk=false;wsSubs=new Set();setWs('○ stream off')}
 function wsSync(){if(!wsOk||!ws)return;
  const cap=wsCap||($('feed').value==='sip'?500:30);
  const arr=[...new Set([SYM,...mcharts.map(t=>t.sym),...act()].filter(Boolean))].slice(0,cap),nx=new Set(arr);
@@ -2267,9 +2281,9 @@ function wsSync(){if(!wsOk||!ws)return;
  wsSubs=nx}
 const TABID=Math.random().toString(36).slice(2);
 function wsLock(){if(lsName!=='localStorage')return true;try{const v=JSON.parse(store.get('wslock')||'null'),n=Date.now();if(v&&v.id!==TABID&&n-v.t<15000)return false;store.set('wslock',JSON.stringify({id:TABID,t:n}));return true}catch(e){return true}}
-function wsUnlock(){try{const v=JSON.parse(store.get('wslock')||'null');if(v&&v.id===TABID)store.set('wslock','null')}catch(e){}}
+function wsUnlock(){try{const v=JSON.parse(store.get('wslock')||'null');if(v&&v.id===TABID)store.set('wslock','null')}catch(e){console.debug(e)}}
 setInterval(()=>{if(ws)wsLock()},5000);
-addEventListener('pagehide',()=>{try{ws&&(ws.onclose=null,ws.close())}catch(e){}wsUnlock()});
+addEventListener('pagehide',()=>{try{ws&&(ws.onclose=null,ws.close())}catch(e){console.debug(e)}wsUnlock()});
 function wsConnect(){
  if(ws||wsFatal||!$('live').checked||!$('key').value||!$('sec').value||$('px').value.trim())return;
  if(!wsLock()){setWs('stream open in another tab (polling here)');setTimeout(wsConnect,8000);return}
@@ -2306,6 +2320,7 @@ function onTrade(m){
  if(MR[sym]&&MR[sym].length&&upd(MR[sym]))dirtyM=true;
  if(Q[sym]){Q[sym].p=p;if(Q[sym].pc)Q[sym].c=(p/Q[sym].pc-1)*100;dirtyQ=true}}
 setInterval(()=>{
+ if(document.hidden)return;
  if(dirtyMain){dirtyMain=false;if(tab==='C')rebuildKeep()}
  if(dirtyM&&tab==='M'&&Date.now()-lastM>800){dirtyM=false;lastM=Date.now();mupdate()}
  if(dirtyQ&&Date.now()-lastQ>2000){dirtyQ=false;lastQ=Date.now();renderWL()}},300);
@@ -2331,7 +2346,7 @@ function zfit(){if(tab==='M')mcharts.forEach(t=>t.ch.priceScale('right').applyOp
 // ---------- multi-chart tab ----------
 const MTF='15Min',MDAYS=10,MSHOW=3; // Multi: fetch 10 days so indicators are warmed up, show only the last 3 (bigger candles)
 let MR={},mcharts=[],msel='',mbusy=false,navT,MSYMS=[];
-try{MSYMS=JSON.parse(store.get('cms')||'[]').filter(Boolean).slice(0,6)}catch(e){}
+try{MSYMS=JSON.parse(store.get('cms')||'[]').filter(Boolean).slice(0,6)}catch(e){console.debug(e)}
 function msyms(){
  MSYMS=MSYMS.filter(k=>SYM_OK.test(k));
  const fill=act().filter(k=>!MSYMS.includes(k));while(MSYMS.length<6&&fill.length)MSYMS.push(fill.shift());
@@ -2360,7 +2375,7 @@ function mk(){
  if(!syms.length){$('mmsg').textContent='Type up to 6 symbols above (or add stocks to the watchlist).';return}
  syms.forEach(sym=>{
   const el=document.createElement('div');el.className='tile'+(sym===msel?' sel':'');el.dataset.s=sym;
-  el.innerHTML=`<div class="mh"><b>${sym}</b><span class="tp"></span><span class="dots" title="30m trend: clouds 8/9, 5/12, 34/50, then TestLine"></span><button class="op" title="Open in Chart">↗</button></div><div class="mb"><canvas></canvas><div class="tc"></div><canvas class="dc"></canvas></div>`;
+  el.innerHTML=`<div class="mh"><b>${xe(sym)}</b><span class="tp"></span><span class="dots" title="30m trend: clouds 8/9, 5/12, 34/50, then TestLine"></span><button class="op" title="Open in Chart">↗</button></div><div class="mb"><canvas></canvas><div class="tc"></div><canvas class="dc"></canvas></div>`;
   $('grid').appendChild(el);
   const c=LightweightCharts.createChart(el.querySelector('.tc'),{autoSize:true,
    layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:10},
@@ -2374,13 +2389,13 @@ function mk(){
   mcharts.push(tb);mattach(tb);
   // Synchronize the crosshair across all Multi-Chart tiles.
   c.subscribeCrosshairMove(p=>{
-   if(!p||!p.point||!p.time){mcharts.forEach(x=>{try{x.ch.clearCrosshairPosition()}catch(e){}});return}
+   if(!p||!p.point||!p.time){mcharts.forEach(x=>{try{x.ch.clearCrosshairPosition()}catch(e){console.debug(e)}});return}
    const tm=p.time;
-   mcharts.forEach(x=>{if(x===tb)return;const rr=x.rows.find(r=>r.time===tm);if(rr){try{x.ch.setCrosshairPosition(rr.close,tm,x.cs)}catch(e){}}});
+   mcharts.forEach(x=>{if(x===tb)return;const rr=x.rows.find(r=>r.time===tm);if(rr){try{x.ch.setCrosshairPosition(rr.close,tm,x.cs)}catch(e){console.debug(e)}}});
   });
   ['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{tb.touched=true},{capture:true,passive:true}));
   });
- $('mj').innerHTML=syms.map(k=>`<button data-s="${k}" class="${k===msel?'on':''}">${k}</button>`).join('');
+ $('mj').innerHTML=syms.map(k=>`<button data-s="${xe(k)}" class="${k===msel?'on':''}">${xe(k)}</button>`).join('');
  mhead();mupdate();wsSync();syms.forEach(dpull);
  const miss=syms.filter(k=>!MR[k]);
  if(miss.length){$('mmsg').textContent='Loading '+miss.join(', ')+'…';
@@ -2420,7 +2435,8 @@ function nav(d){if(tab==='S'){snav(d);return}if(tab==='O'){onav(d);return}if(tab
  const i=ORDER.indexOf(SYM),k=i<0?(d>0?0:n-1):(i+d+n)%n;
  $('sym').value=ORDER[k];document.querySelectorAll('.w').forEach(e=>e.classList.toggle('on',e.dataset.s===ORDER[k]));
  clearTimeout(navT);navT=setTimeout(load,150)}
-function setTab(t){const pt=tab;cancelDraw();tab=t;document.body.dataset.tab=t;store.set('ctab',t);
+window.tabHooks=[];
+function setTab(t){const pt=tab;cancelDraw();tab=t;tabHooks.forEach(h=>{try{h(t,pt)}catch(e){console.debug(e)}});document.body.dataset.tab=t;store.set('ctab',t);
  if(t==='C'){if(pt==='M'&&msel)$('sym').value=msel;const sy=$('sym').value.trim().toUpperCase(),dy=Math.max(2,+$('days').value||5);
   if(pt==='M'){$('col').value=$('mcol').value;$('wid').value=$('mwid').value;if(sy===SYM){D=loadDr(sy);hist=[];selD=null}} // pick up drawings made in Multi
   if(hasKey()&&(sy!==SYM||lastTf!==$('tf').value||lastDays!==dy)&&!busy)setTimeout(load,0)}
@@ -2575,14 +2591,14 @@ async function moreMain(){
  try{if($('tf').value==='1Day'){mainDone=true;return}const d=curDays(),nd=Math.min(60,d+5);if(nd===d){mainDone=true;return}
   const n0=raw.length;raw=mergeBars(raw,await getBars(SYM,$('tf').value,startFor(nd),raw[0].t));
   vd=nd;if(raw.length===n0&&nd>=60)mainDone=true;rebuildKeep()
- }catch(e){}finally{moreBusy=false}}
+ }catch(e){console.debug(e)}finally{moreBusy=false}}
 async function mmore(t){return;
  if(t.more||t.done||!MR[t.sym]||!MR[t.sym].length)return;t.more=true;
  try{const nd=Math.min(60,t.days+5),n0=MR[t.sym].length;if(nd===t.days){t.done=true;return}
   await mfetch([t.sym],true,{days:nd,end:MR[t.sym][0].t});
   if(MR[t.sym].length===n0){if(++t.empty>=2)t.done=true}else t.empty=0;
   t.days=nd;mupdate()
- }catch(e){}finally{t.more=false}}
+ }catch(e){console.debug(e)}finally{t.more=false}}
 
 // ---------- shared helpers ----------
 const fm=(x,d=2)=>x==null||!isFinite(x)?'–':x.toFixed(d);
@@ -2609,11 +2625,11 @@ async function discordNotify(m){
  try{await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'Cytocine Levels',embeds:[{title:'Cytocine Alert',description:k,color:0x2962ff,timestamp:new Date().toISOString()}]})})}catch(e){console.warn('Discord alert failed',e)}
 }
 function notify(m){SC.A.unshift({t:new Date().toLocaleTimeString(),m});SC.A=SC.A.slice(0,100);
- try{if(window.Notification&&Notification.permission==='granted')new Notification('Cytocine',{body:m})}catch(e){};discordNotify(m);renderAlerts()}
+ try{if(window.Notification&&Notification.permission==='granted')new Notification('Cytocine',{body:m})}catch(e){console.debug(e)};discordNotify(m);renderAlerts()}
 const BC={};let BCkey='',BCload=false;
 const idb=()=>new Promise((res,rej)=>{try{const r=indexedDB.open('cytocine',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
 async function idbGet(k){try{const d=await idb();return await new Promise((res,rej)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}catch(e){return null}}
-async function idbSet(k,v){try{const d=await idb();await new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+async function idbSet(k,v){try{const d=await idb();await new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){console.debug(e)}}
 async function getRetry(u,n=3){for(let i=0;;i++){try{return await get(u)}catch(e){if(i>=n||!/^(429|5\d\d)\b/.test(e.message))throw e;await new Promise(r=>setTimeout(r,700*(i+1)*(1+Math.random())))}}}
 async function pageBars(syms,tf,st){const by={};let tok='';
  do{const j=await getRetry(`https://data.alpaca.markets/v2/stocks/bars?symbols=${syms.join(',')}&timeframe=${tf}&start=${st}&limit=10000&adjustment=split&sort=asc&feed=${$('feed').value}`+(tok?`&page_token=${tok}`:''));
@@ -2715,7 +2731,7 @@ function renderS(){
  detS();renderAlerts();schDraw()}
 function detS(){const r=SC.res.find(x=>x.sym===SC.sel);if(!r){$('sdet').innerHTML='';return}
  const p=v=>fm(v,v<10?3:2),ok=b=>`<span class="${b?'up':'dn'}">${b?'✓':'✗'}</span>`;
- $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${r.sym}</b> · last ${stl()} bar ${r.t?new Date(r.t).toLocaleString():''} · ${r.buy?'<b class="up">BUY state</b>':r.sell?'<b class="dn">SELL state</b>':'no signal state'}</div><div class="tw"><table class="t"><thead><tr><th scope="col">BUY condition</th><th scope="col">Values</th><th scope="col"></th></tr></thead><tbody>`+
+ $('sdet').innerHTML=`<div class="hint" style="margin:12px 0 4px"><b>${xe(r.sym)}</b> · last ${stl()} bar ${r.t?new Date(r.t).toLocaleString():''} · ${r.buy?'<b class="up">BUY state</b>':r.sell?'<b class="dn">SELL state</b>':'no signal state'}</div><div class="tw"><table class="t"><thead><tr><th scope="col">BUY condition</th><th scope="col">Values</th><th scope="col"></th></tr></thead><tbody>`+
   `<tr><td>1 · Green candle, close above TestLine, TestLine green</td><td>close ${p(r.px)} · EMA12 ${p(r.ce12)} · EMA34 ${p(r.ce34)} · TestLine ${p(r.test)}</td><td>${ok(r.c1)}</td></tr>`+
   `<tr><td>2 · 5/12 cloud bullish and resolved</td><td>EMA5 ${p(r.e5)} · EMA12 ${p(r.e12)} · gap ${fm(r.g1,2)} ATR</td><td>${ok(r.c2)}</td></tr>`+
   `<tr><td>3 · 34/50 cloud bullish and resolved</td><td>EMA34 ${p(r.e34)} · EMA50 ${p(r.e50)} · gap ${fm(r.g2,2)} ATR (ATR ${p(r.a)})</td><td>${ok(r.c3)}</td></tr>`+
@@ -2769,8 +2785,8 @@ const sigPrim={attached(p){sigReq=p.requestUpdate},detached(){sigReq=null},updat
    c.fillStyle='#fff';c.textAlign='center';c.fillText(txt,L+w/2,T+h/2+1)});
   c.restore()})}})}]}};
 try{candle.attachPrimitive(sigPrim);PILL_OK=true}catch(e){PILL_OK=false}
-let planL=[];function drawPlan(){try{const m=sigMarkers();if(PILL_OK){SIGP=m;candle.setMarkers([]);sigReq&&sigReq()}else candle.setMarkers(m);drawLvMain()}catch(e){}try{qovMain()}catch(e){}}
-function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){}}
+let planL=[];function drawPlan(){try{const m=sigMarkers();if(PILL_OK){SIGP=m;candle.setMarkers([]);sigReq&&sigReq()}else candle.setMarkers(m);drawLvMain()}catch(e){console.debug(e)}try{qovMain()}catch(e){console.debug(e)}}
+function tileSig(t){try{t.cs.setMarkers(sigMarkersFor(t.rows,900,t.sym,false))}catch(e){console.debug(e)}}
 function sigRedraw(){drawPlan();mcharts.forEach(tileSig)}
 function sigRecalc(){SGC.forEach(g=>{g.list=chartSigList(g.bars)});sigRedraw();if(SC.raw)recompute(false)}
 async function sigEnsure(sym,rowsStartSec,done){
@@ -2783,7 +2799,7 @@ async function sigEnsure(sym,rowsStartSec,done){
   else{bars=await getBars(sym,'30Min',new Date(need).toISOString());from=need}
   g.bars=bars;g.from=Math.min(from,need);g.at=Date.now();g.list=chartSigList(bars);done&&done();
   if(SGC.size>12){for(const k of SGC.keys()){if(k!==SYM&&!mcharts.some(t=>t.sym===k)){SGC.delete(k);break}}}}
- catch(e){}finally{g.busy=false}}
+ catch(e){console.debug(e)}finally{g.busy=false}}
 // ---- Entry quality score (Q, out of 6) ----
 // 1 not extended (<= 2 ATR from the 12 EMA) · 2 RVOL >= 1.2 · 3 higher-timeframe trend agrees · 4 beating SPY today (BUY) / lagging it (SELL)
 // 5 market (SPY higher-timeframe trend) agrees · 6 ADX(14) >= 20 (trending, not chop)
@@ -2835,7 +2851,7 @@ function sizeTxt(lv){const sh=sharesFor(lv);return sh>0?` · ${sh} sh ($${Math.r
 function lvLines(ser,lv){const mk=(price,color,title)=>ser.createPriceLine({price,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});
  return[mk(lv.entry,'#607d8b','Entry'+sizeTxt(lv)),mk(lv.h1?lv.trail:lv.stop,'#e5252a',lv.h1?'Trail':'Stop'),mk(lv.t1,'#00b34a','T1 1.5R'),mk(lv.t2,'#007a33','T2 3R')]}
 let lvMain=[];
-function drawLvMain(){try{lvMain.forEach(l=>candle.removePriceLine(l))}catch(e){}lvMain=[];
+function drawLvMain(){try{lvMain.forEach(l=>candle.removePriceLine(l))}catch(e){console.debug(e)}lvMain=[];
  const g=SGC.get(SYM);if(!$('slv').checked||!$('sig').checked||!g||!g.list.length)return;
  const e=g.list[g.list.length-1],lv=tradeLevels(g.bars,e,atr(g.bars));
  if(!lv||lv.st==='stopped'||lv.st==='T1 hit, then stopped'||lv.st==='T2 hit')return;lvMain=lvLines(candle,lv)}
@@ -2847,7 +2863,7 @@ function drawLvMain(){try{lvMain.forEach(l=>candle.removePriceLine(l))}catch(e){
 // ---- On-chart label table: Not chasing / Relative strength / ADX ----
 const spyP={v:null,at:0,busy:false};
 async function spyEnsure(cb){if(!hasKey()||spyP.busy||Date.now()-spyP.at<60000)return;spyP.busy=true;
- try{const b=await getBars('SPY','30Min',new Date(Date.now()-6*864e5).toISOString());spyP.v=dayPct(b);spyP.at=Date.now();cb&&cb()}catch(e){}finally{spyP.busy=false}}
+ try{const b=await getBars('SPY','30Min',new Date(Date.now()-6*864e5).toISOString());spyP.v=dayPct(b);spyP.at=Date.now();cb&&cb()}catch(e){console.debug(e)}finally{spyP.busy=false}}
 function qMini(bars,side){if(!bars||bars.length<30)return null;
  const cl=bars.map(b=>b.c),n=cl.length-1,e12=ema(cl,12),e34=ema(cl,34);side=side||(e12[n]>=e34[n]?'buy':'sell');
  const sg=side==='buy'?1:-1,a=atr(bars)[n],ext=a>0?sg*(cl[n]-e12[n])/a:null,adx=adxLast(bars),dp=dayPct(bars),sp=spyP.v!=null?spyP.v:SC.spyPct,rs=dp!=null&&sp!=null?dp-sp:null;
@@ -2867,7 +2883,7 @@ function qovMain(){const g=SGC.get(SYM),le=g&&g.list&&g.list.length?g.list[g.lis
 function qovPanel(){if(!SC.sel||!SC.raw)return;const r=SC.res.find(x=>x.sym===SC.sel),le=r&&r.ev&&r.ev.length?r.ev[r.ev.length-1].side:null;
  qovFill($('sch'),qMini(SC.raw[SC.sel],le),stl(),$('qlp').checked);spyEnsure(qovPanel)}
 {const sv=store.get('cqlb');if(sv==='0'){$('qlb').checked=false;$('qlp').checked=false}
- const sync=c=>{$('qlb').checked=$('qlp').checked=c;store.set('cqlb',c?'1':'0');try{qovMain()}catch(e){}try{qovPanel()}catch(e){}};
+ const sync=c=>{$('qlb').checked=$('qlp').checked=c;store.set('cqlb',c?'1':'0');try{qovMain()}catch(e){console.debug(e)}try{qovPanel()}catch(e){console.debug(e)}};
  $('qlb').onchange=()=>sync($('qlb').checked);$('qlp').onchange=()=>sync($('qlp').checked)}
 // ---- Scanner: chart that opens below the table when a ticker is clicked ----
 let SCH=null;
@@ -2889,7 +2905,7 @@ function schDraw(){
   const now=Date.now(),st=stS()*1e3,mk=(r.ev||[]).filter(e=>rw[e.i]).map(e=>{const buy=e.side==='buy',live=now<Date.parse(e.t)+st;
    return{time:rw[e.i].time,position:buy?'belowBar':'aboveBar',color:buy?'#00b34a':'#e5252a',shape:buy?'arrowUp':'arrowDown',size:2,text:(buy?'BUY':'SELL')+(live?' ·live':'')}});
   SCH.cs.setMarkers(mk);
-  (SCH.pl||[]).forEach(l=>{try{SCH.cs.removePriceLine(l)}catch(e){}});SCH.pl=[];let lvTxt='';
+  (SCH.pl||[]).forEach(l=>{try{SCH.cs.removePriceLine(l)}catch(e){console.debug(e)}});SCH.pl=[];let lvTxt='';
   const le=r.ev&&r.ev[r.ev.length-1];
   if(le&&$('spl').checked){const lv=tradeLevels(bars,le,atr(bars));
    if(lv){lvLines(SCH.cs,lv).forEach(l=>SCH.pl.push(l));const sg=le.side==='buy'?1:-1;
@@ -2898,7 +2914,7 @@ function schDraw(){
   const last=r.ev&&r.ev[r.ev.length-1],chg=Q[SC.sel];
   $('sphs').textContent=SC.sel;
   $('sphi').innerHTML=`${tf} · ${f(r.px)}${chg?` <span class="${chg.c>=0?'up':'dn'}">${chg.c>=0?'+':''}${chg.c.toFixed(2)}%</span>`:''}`+(last?` · last signal <b class="${last.side==='buy'?'up':'dn'}">${last.side==='buy'?'BUY':'SELL'}</b> ${r.n-1-last.i===0?'now':(r.n-1-last.i)+' bars ago'}`:' · no signal in range')+(r.buy?' · <b class="up">BUY state</b>':r.sell?' · <b class="dn">SELL state</b>':'')+lvTxt;qovPanel();
- }catch(e){}}
+ }catch(e){console.debug(e)}}
 $('spx').onclick=()=>{SC.sel='';renderS()};
 $('sprev').onclick=()=>snav(-1);$('snext').onclick=()=>snav(1);
 $('spopen').onclick=()=>{if(SC.sel)openChart(SC.sel)};
@@ -2906,7 +2922,7 @@ function setScanTF(tf,rescan){const c=STFS[tf]||STFS['30Min'];tf=STFS[tf]?tf:'30
  SC.tfs=[[c[0],tf,c[1]]];$('stf').value=tf;SC.prev={};
  if(rescan&&SC.raw&&hasKey())scan();}
 $('stf').onchange=()=>{store.set('cstf',$('stf').value);setScanTF($('stf').value,true)};
-if(store.get('c1h5')!=='1'){store.set('cstf','1Hour');let v=[];try{v=JSON.parse(store.get('csf3')||'[]')}catch(e){}if(!Array.isArray(v))v=[];store.set('csf3',JSON.stringify([v[0]||'0.5',v[1]||'sig','5']));store.set('c1h5','1')} // one-time: scanner defaults to 1h, last 5 bars
+if(store.get('c1h5')!=='1'){store.set('cstf','1Hour');let v=[];try{v=JSON.parse(store.get('csf3')||'[]')}catch(e){console.debug(e)}if(!Array.isArray(v))v=[];store.set('csf3',JSON.stringify([v[0]||'0.5',v[1]||'sig','5']));store.set('c1h5','1')} // one-time: scanner defaults to 1h, last 5 bars
 setScanTF(store.get('cstf')||'1Hour',false);
 function snav(d){const k=(SC.view||SC.res).map(r=>r.sym);if(!k.length)return;const i=k.indexOf(SC.sel);SC.sel=k[(i<0?0:i+d+k.length)%k.length];renderS();const el=document.querySelector('#stab tr.on');if(el)el.scrollIntoView({block:'nearest'})}
 $('stab').onclick=e=>{const th=e.target.closest('th[data-sort]');if(th){const k=th.dataset.sort;if(SC.sort.k!==k)SC.sort={k,dir:-1};else if(SC.sort.dir<0)SC.sort.dir=1;else SC.sort={k:'',dir:-1};renderS();return}
@@ -2919,8 +2935,8 @@ $('sexp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v
   rows=SC.res.map(r=>[r.sym,r.px.toFixed(4),+r.c1,+r.c2,+r.c3,+r.c4,r.met,+r.sell,r.gap.toFixed(2),r.e5.toFixed(4),r.e12.toFixed(4),r.e34.toFixed(4),r.e50.toFixed(4),r.test.toFixed(4)])}
  const L=[h,...rows].map(x=>x.map(q).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L],{type:'text/csv'}));a.download=SC.sigView?`cytocine-${stl()}-signals.csv`:`cytocine-${stl()}-scan.csv`;a.click()};
-try{const v=JSON.parse(store.get('csf3')||'[]');if(v[0]!=null&&isFinite(v[0])&&v[0]!=='')$('sn').value=v[0];if(['4','3','all','sig','buy','sell'].includes(v[1]))$('sf').value=v[1];if(v[2]!=null&&isFinite(v[2])&&v[2]!=='')$('sb').value=v[2]}catch(e){}
-$('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){}};
+try{const v=JSON.parse(store.get('csf3')||'[]');if(v[0]!=null&&isFinite(v[0])&&v[0]!=='')$('sn').value=v[0];if(['4','3','all','sig','buy','sell'].includes(v[1]))$('sf').value=v[1];if(v[2]!=null&&isFinite(v[2])&&v[2]!=='')$('sb').value=v[2]}catch(e){console.debug(e)}
+$('srun').onclick=scan;$('snot').onclick=()=>{try{Notification.requestPermission()}catch(e){console.debug(e)}};
 $('sf').onchange=()=>{saveSF();renderS()};$('sb').onchange=()=>{saveSF();renderS()};
 $('sn').onchange=()=>{saveSF();if(SC.raw)recompute(false);sigRecalc()};
 $('sflt').value=store.get('csflt')||'off';if(!$('sflt').value)$('sflt').value='off';
@@ -2935,7 +2951,7 @@ let sTimer;$('sauto').onchange=e=>{clearInterval(sTimer);if(e.target.checked)sTi
 // ---------- export / import drawings + price alerts (JSON file) ----------
 const SYM_RE=/^[A-Z][A-Z0-9.\-]{0,9}$/,DTYPES=['trend','ray','hline','rect','fib','pos','text'];
 function flash(t,e){if(tab==='M'){$('mmsg').textContent=t}else if(tab==='S'){$('smsg').textContent=t}else if(tab==='O'){$('omsg').textContent=t}else if(tab==='P'){$('pmsg').textContent=t}else msg(t,e)}
-function drKeys(){const k=new Set(Object.keys(mem));try{if(ls)for(let i=0;i<ls.length;i++)k.add(ls.key(i))}catch(e){}return[...k].filter(x=>x.startsWith('dr_'))}
+function drKeys(){const k=new Set(Object.keys(mem));try{if(ls)for(let i=0;i<ls.length;i++)k.add(ls.key(i))}catch(e){console.debug(e)}return[...k].filter(x=>x.startsWith('dr_'))}
 function exportDr(){
  const out={},al=[];let nd=0;
  drKeys().sort().forEach(k=>{const sym=k.slice(3),a=loadDr(sym);if(!SYM_RE.test(sym)||!a.length)return;out[sym]=a;nd+=a.length;
@@ -3006,7 +3022,7 @@ function oOpts(){const n=(id,d,lo,hi)=>{const v=+$(id).value;return isFinite(v)&
  return{type:$('otype').value,minD:Math.round(n('omind',7,0,365)),maxD:Math.round(n('omaxd',45,1,730)),minV:n('ominv',1000,0,1e9),vb:$('ovb').value,band:n('oband',20,0,100),fast:Math.min(fast,slow-1),slow,feed:$('ofeed').value,per:Math.round(n('opn',2,1,10))}}
 const OIDS=['otype','omind','omaxd','ominv','ovb','oband','oef','oes','ofeed','opn'];
 const saveO=()=>store.set('copt',JSON.stringify(OIDS.map(i=>$(i).value)));
-try{const v=JSON.parse(store.get('copt')||'[]');OIDS.forEach((i,k)=>{if(v[k]!=null&&v[k]!==''){const old=$(i).value;$(i).value=v[k];if($(i).value===''&&$(i).tagName==='SELECT')$(i).value=old}})}catch(e){}
+try{const v=JSON.parse(store.get('copt')||'[]');OIDS.forEach((i,k)=>{if(v[k]!=null&&v[k]!==''){const old=$(i).value;$(i).value=v[k];if($(i).value===''&&$(i).tagName==='SELECT')$(i).value=old}})}catch(e){console.debug(e)}
 OIDS.forEach(i=>$(i).onchange=saveO);
 async function optSnaps(und,px,o){
  const out={},t0=et(Date.now()/1e3).d,q=['feed='+o.feed,'limit=1000','expiration_date_gte='+addD(t0,o.minD+1),'expiration_date_lte='+addD(t0,o.maxD)];
@@ -3127,7 +3143,7 @@ function applyOM(o){if(!o||typeof o!=='object')return 0;
  if(isFinite(o.fast)&&isFinite(o.slow)){OM.fast=Math.max(2,Math.min(100,(+o.fast)|0));OM.slow=Math.max(OM.fast+1,Math.min(200,(+o.slow)|0))}
  if(isFinite(o.days))OM.days=Math.max(1,Math.min(10,(+o.days)|0));if(isFinite(o.cols))OM.cols=Math.max(1,Math.min(4,(+o.cols)|0));
  OMsave();syncOMui();if(tab==='P')pk();return sl.filter(Boolean).length}
-try{const v=JSON.parse(store.get('comv')||'null');if(v)applyOM(v)}catch(e){}syncOMui();
+try{const v=JSON.parse(store.get('comv')||'null');if(v)applyOM(v)}catch(e){console.debug(e)}syncOMui();
 function omAdd(list){let n=0,full=false;list.forEach(sy=>{if(OM.syms.includes(sy))return;const i=OM.syms.indexOf('');if(i<0){full=true;return}OM.syms[i]=sy;n++});
  OMsave();const t=n?`${n} contract${n>1?'s':''} added to Opt Multi.`:full?'Opt Multi is full (6). Clear a slot there first.':'Already in Opt Multi.';
  if(tab==='O')$('omsg').textContent=t;else if(tab==='P')$('pmsg').textContent=t;if(tab==='P')pk()}
@@ -3145,14 +3161,14 @@ async function pfetch(syms,full){if(!syms.length||!hasKey())return;
  const by=await optBars(syms,new Date(Date.now()-(full?9:2)*864e5).toISOString());
  syms.forEach(k=>{OM.bars[k]=mergeBars(full?[]:(OM.bars[k]||[]),by[k]||[])})}
 async function psnap(syms){if(!syms.length||!hasKey())return;
- try{const j=await getRetry(`https://data.alpaca.markets/v1beta1/options/snapshots?symbols=${syms.map(encodeURIComponent).join(',')}&feed=${$('ofeed').value}`);Object.assign(OM.snap,j.snapshots||{})}catch(e){}}
+ try{const j=await getRetry(`https://data.alpaca.markets/v1beta1/options/snapshots?symbols=${syms.map(encodeURIComponent).join(',')}&feed=${$('ofeed').value}`);Object.assign(OM.snap,j.snapshots||{})}catch(e){console.debug(e)}}
 function pk(){
  OM.tiles.forEach(t=>t.ch.remove());OM.tiles=[];$('pgrid').innerHTML='';pslots();$('pgrid').style.setProperty('--cols',OM.cols);
  const syms=OM.syms.filter(Boolean);
  if(!syms.length){$('pmsg').className='';$('pmsg').textContent='Type up to 6 contracts above (for example AAPL 11/20 250C, or the full OCC symbol), or use ＋ in the Options tab.';return}
  syms.forEach(sy=>{
   const el=document.createElement('div');el.className='tile'+(sy===OM.sel?' sel':'');el.dataset.s=sy;
-  el.innerHTML=`<div class="mh"><b>${labelOf(sy)}</b><span class="tp"></span><button class="op" title="Open the stock in Chart">↗</button><button class="rm" title="Remove this chart">✕</button></div><div class="mb"><canvas></canvas><div class="tc"></div><canvas class="dc"></canvas></div>`;
+  el.innerHTML=`<div class="mh"><b>${xe(labelOf(sy))}</b><span class="tp"></span><button class="op" title="Open the stock in Chart">↗</button><button class="rm" title="Remove this chart">✕</button></div><div class="mb"><canvas></canvas><div class="tc"></div><canvas class="dc"></canvas></div>`;
   $('pgrid').appendChild(el);
   const c=LightweightCharts.createChart(el.querySelector('.tc'),{autoSize:true,
    layout:{background:{type:'solid',color:'transparent'},textColor:'#131722',fontSize:10},grid:{vertLines:{visible:false},horzLines:{visible:false}},
@@ -3246,14 +3262,16 @@ $('tbt').onclick=()=>$('tb').classList.toggle('open');
 // ---------- mobile: auto-play + swipe to next chart ----------
 (function(){let pt=null,wl=null,sec=+(store.get&&store.get('ppsec'))||8;const pp=$('pp'),pps=$('pps'),sz=$('swz');
  pps.textContent=sec+'s';
- const wake=async()=>{try{if(navigator.wakeLock&&!wl)wl=await navigator.wakeLock.request('screen'),wl.addEventListener('release',()=>{wl=null})}catch(e){}};
- const unwake=()=>{try{wl&&wl.release()}catch(e){}wl=null};
- function stop(){clearInterval(pt);pt=null;pp.classList.remove('on');pp.textContent='\u25B6';unwake()}
- function start(){stop();pp.classList.add('on');pp.textContent='\u23F8';wake();pt=setInterval(()=>{if(document.hidden||tab!=='C'||busy)return;nav(1)},sec*1000)}
+ const wake=async()=>{try{if(navigator.wakeLock&&!wl)wl=await navigator.wakeLock.request('screen'),wl.addEventListener('release',()=>{wl=null})}catch(e){console.debug(e)}};
+ const unwake=()=>{try{wl&&wl.release()}catch(e){console.debug(e)}wl=null};
+ function stop(){clearInterval(pt);pt=null;pp.setAttribute('aria-pressed','false');pp.classList.remove('on');pp.textContent='\u25B6';unwake()}
+ function start(){stop();pp.setAttribute('aria-pressed','true');pp.classList.add('on');pp.textContent='\u23F8';wake();pt=setInterval(()=>{if(document.hidden||tab!=='C'||busy)return;nav(1)},sec*1000)}
+ pp.setAttribute('aria-pressed','false');pp.setAttribute('aria-label','Auto-play charts');pps.setAttribute('aria-label','Seconds per chart');
  pp.onclick=()=>pt?stop():start();
- pps.onclick=()=>{const o=[4,8,15,30];sec=o[(o.indexOf(sec)+1)%o.length];pps.textContent=sec+'s';try{store.set('ppsec',sec)}catch(e){}if(pt)start()};
+ pps.onclick=()=>{const o=[4,8,15,30];sec=o[(o.indexOf(sec)+1)%o.length];pps.textContent=sec+'s';try{store.set('ppsec',sec)}catch(e){console.debug(e)}if(pt)start()};
  document.addEventListener('visibilitychange',()=>{if(document.hidden)unwake();else if(pt)wake()});
- const st=setTab;setTab=function(t){if(t!=='C')stop();return st.apply(this,arguments)};
+ tabHooks.push(t=>{if(t!=='C')stop()});
+ document.addEventListener('keydown',e=>{if(tab!=='C'||e.target.closest('input,select,textarea,[contenteditable]'))return;if(e.key==='ArrowRight'){nav(1);e.preventDefault()}else if(e.key==='ArrowLeft'){nav(-1);e.preventDefault()}else if(e.key===' '&&e.target===document.body&&matchMedia('(max-width:720px)').matches){pt?stop():start();e.preventDefault()}});
  let x0=null,y0=0;
  sz.addEventListener('touchstart',e=>{const t=e.touches[0];x0=t.clientX;y0=t.clientY},{passive:true});
  sz.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
@@ -3283,7 +3301,7 @@ if(hasKey()){load();quotes();trends()}else $('kd').open=true;
 wsConnect();
 </scr⁣ipt>
 <script>
-if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{fetch('sw.js',{method:'HEAD'}).then(r=>{if(r.ok)navigator.serviceWorker.register('sw.js')}).catch(()=>{})})}
 </scr⁣ipt>
 <script>
 (()=>{let q=0;
@@ -3436,6 +3454,6 @@ $('bG').onclick=()=>show('G');$('bC').onclick=()=>show('C');$('bP').onclick=()=>
 // let the toolbar paint first, then build the (large) active dashboard
 const ma=st.get('mergedApp'),first=['C','P'].includes(ma)?ma:'G';
 requestAnimationFrame(()=>setTimeout(()=>show(first),0));
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>fetch('sw.js',{method:'HEAD'}).then(r=>{if(r.ok)navigator.serviceWorker.register('sw.js')}).catch(()=>{}));
 })();
 </script></body></html>
