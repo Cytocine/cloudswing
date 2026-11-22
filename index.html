@@ -1573,6 +1573,7 @@ body.nohdr>header{display:none}
 #hshow{display:none;position:fixed;top:calc(4px + env(safe-area-inset-top));right:8px;z-index:60;height:24px;min-height:0;padding:0 8px;font-size:12px;opacity:.8}
 body.nohdr #hshow{display:block}
 #msg{padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+#pp,#pps,#swz{display:none}
 @media(max-width:720px){
  header{padding:6px 8px;gap:6px}header b{display:none}
  input,select,button{font-size:16px;min-height:36px}
@@ -1587,6 +1588,10 @@ body.nohdr #hshow{display:block}
  #grid{--cols:2!important;grid-auto-rows:230px}.hint{display:none}
  #tbt{display:block;position:absolute;z-index:6;left:6px;top:26px;width:40px;height:40px;padding:0;background:#fffffff2}
  #tbt.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+ #pp,#pps{display:block;position:absolute;z-index:6;left:6px;width:40px;height:40px;padding:0;background:#fffffff2;font-size:16px}
+ #pp{top:70px}#pps{top:114px;font-size:12px;font-weight:700}
+ #pp.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+ #swz{display:flex;align-items:center;justify-content:center;position:absolute;z-index:5;left:0;right:0;bottom:0;height:34px;touch-action:pan-y;background:#0000000d;color:#667;font-size:11px;letter-spacing:.5px;user-select:none}
  #tb{display:none;flex-direction:row;left:52px;right:6px;top:26px;overflow-x:auto;overflow-y:hidden;max-height:none;max-width:none}
  #tb.open{display:flex}
  #tb button,#tb select,#tb input{width:40px;height:36px;min-height:0;flex:none;font-size:13px}
@@ -1701,6 +1706,8 @@ table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:
   <div id="stats"></div>
   <div id="box"><canvas id="cv"></canvas><div id="ch"></div><canvas id="dv"></canvas><div id="leg"></div>
    <button id="tbt" title="Drawing tools">✎</button>
+   <button id="pp" title="Auto-play charts">▶</button><button id="pps" title="Seconds per chart">8s</button>
+   <div id="swz">‹ swipe here for prev / next chart ›</div>
    <div id="tb">
     <button data-t="sel" title="Select / move (Esc)">↖</button>
     <button data-t="trend" title="Trend line">╱</button>
@@ -3236,6 +3243,23 @@ function planCard(r){const bars=SC.raw&&SC.raw[r.sym];if(!bars||!r.ev||!r.ev.len
 $('go').onclick=()=>{wsFatal=false;wsConnect();load();quotes();trends()};
 $('zi').onclick=()=>zoom(.7);$('zo').onclick=()=>zoom(1/.7);$('zf').onclick=zfit;
 $('tbt').onclick=()=>$('tb').classList.toggle('open');
+// ---------- mobile: auto-play + swipe to next chart ----------
+(function(){let pt=null,wl=null,sec=+(store.get&&store.get('ppsec'))||8;const pp=$('pp'),pps=$('pps'),sz=$('swz');
+ pps.textContent=sec+'s';
+ const wake=async()=>{try{if(navigator.wakeLock&&!wl)wl=await navigator.wakeLock.request('screen'),wl.addEventListener('release',()=>{wl=null})}catch(e){}};
+ const unwake=()=>{try{wl&&wl.release()}catch(e){}wl=null};
+ function stop(){clearInterval(pt);pt=null;pp.classList.remove('on');pp.textContent='\u25B6';unwake()}
+ function start(){stop();pp.classList.add('on');pp.textContent='\u23F8';wake();pt=setInterval(()=>{if(document.hidden||tab!=='C'||busy)return;nav(1)},sec*1000)}
+ pp.onclick=()=>pt?stop():start();
+ pps.onclick=()=>{const o=[4,8,15,30];sec=o[(o.indexOf(sec)+1)%o.length];pps.textContent=sec+'s';try{store.set('ppsec',sec)}catch(e){}if(pt)start()};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)unwake();else if(pt)wake()});
+ const st=setTab;setTab=function(t){if(t!=='C')stop();return st.apply(this,arguments)};
+ let x0=null,y0=0;
+ sz.addEventListener('touchstart',e=>{const t=e.touches[0];x0=t.clientX;y0=t.clientY},{passive:true});
+ sz.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+  if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){nav(dx<0?1:-1);if(pt)start();if(navigator.vibrate)navigator.vibrate(10)}},{passive:true});
+})();
+
 $('fo').onchange=()=>{focus=$('fo').checked;saveFav();focusUI();if(focus&&!fav.length)flash('Focus is on but nothing is starred, so the full list is shown. Tap ☆ next to a symbol in the watchlist.');Q={};T={};wlChanged();if(tab==='M')mk()};
 const boSave=()=>{store.set('cb',$('bo').checked?'1':'0');store.set('cbr',$('br').checked?'1':'0');renderWL()};
 $('bo').onchange=()=>{if($('bo').checked)$('br').checked=false;boSave()};
